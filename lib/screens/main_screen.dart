@@ -81,6 +81,41 @@ class MainScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 20),
+                        
+                        // 알림 테스트 버튼
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 20),
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              // 20초 후에 알림 예약
+                              final scheduledTime = DateTime.now().add(const Duration(seconds: 10));
+                              context.read<ChatProvider>().scheduleBotCheckIn(
+                                bot: context.read<ChatProvider>().currentBot,
+                                message: '요즘 힘든 일 없어?',
+                                scheduledDate: scheduledTime,
+                              );
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('10초 후에 알림이 전송됩니다!'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.notifications),
+                            label: const Text('10초 후 알림 보내기'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        
                         Expanded(
                           child: GridView.count(
                             crossAxisCount: 2,
