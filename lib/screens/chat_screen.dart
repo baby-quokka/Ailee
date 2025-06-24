@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../providers/chat_provider.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
@@ -57,8 +58,12 @@ class ChatScreen extends StatelessWidget {
                 final messages = chatProvider.currentRoom?.messages ?? [];
                 return ListView.builder(
                   padding: const EdgeInsets.all(8),
-                  itemCount: messages.length,
+                  itemCount: messages.length + (chatProvider.isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
+                    // 로딩 중이고 마지막 아이템인 경우 로딩 인디케이터 표시
+                    if (chatProvider.isLoading && index == messages.length) {
+                      return _buildLoadingIndicator();
+                    }
                     final message = messages[index];
                     return _buildMessageBubble(message);
                   },
@@ -119,6 +124,26 @@ class ChatScreen extends StatelessWidget {
         child: Text(
           message.content,
           style: TextStyle(color: message.isUser ? Colors.white : Colors.black),
+        ),
+      ),
+    );
+  }
+
+  /// 로딩 인디케이터 위젯
+  Widget _buildLoadingIndicator() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        constraints: const BoxConstraints(maxWidth: 40),
+        child: const SpinKitPulse(
+          color: Colors.grey,
+          size: 24.0,
         ),
       ),
     );
@@ -253,14 +278,7 @@ class _MessageInputState extends State<_MessageInput> {
             builder: (context, chatProvider, child) {
               return IconButton(
                 onPressed: chatProvider.isLoading ? null : _sendMessage,
-                icon:
-                    chatProvider.isLoading
-                        ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.send),
+                icon: const Icon(Icons.send),
                 color: Colors.blue,
               );
             },
