@@ -5,7 +5,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/chat_service.dart';
 import 'services/notification_service.dart';
 import 'providers/chat_provider.dart';
+import 'providers/auth_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,30 +33,78 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      // ChangeNotifierProvider는 상태 관리를 위한 위젯입니다.
-      // 이 위젯은 하위 위젯 트리에 상태를 제공하고, 상태가 변경될 때 위젯을 다시 빌드합니다.
-      // 여기서는 ChatProvider를 상태로 제공합니다.
-      create: (context) {
-        final chatProvider = ChatProvider(
-          // create 콜백은 ChangeNotifierProvider가 처음 생성될 때 호출됩니다.
-          // 이 콜백은 상태 객체(ChatProvider)의 인스턴스를 생성하고 반환합니다.
-          // context 매개변수는 위젯 트리의 BuildContext를 제공합니다.
-          chatService: ChatService(apiKey: dotenv.env['OPENAI_API_KEY'] ?? ''),
-        );
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) {
+            final chatProvider = ChatProvider(
+              chatService: ChatService(
+                apiKey: dotenv.env['OPENAI_API_KEY'] ?? '',
+              ),
+            );
 
-        // 알림 탭 콜백 설정
-        NotificationService().setNotificationTappedCallback(
-          (payload) => chatProvider.handleNotificationPayload(payload),
-        );
+            // 알림 탭 콜백 설정
+            NotificationService().setNotificationTappedCallback(
+              (payload) => chatProvider.handleNotificationPayload(payload),
+            );
 
-        return chatProvider;
-      },
+            return chatProvider;
+          },
+        ),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+      ],
       child: MaterialApp(
-        title: 'ChatGPT Chat',
-        theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-        home: const HomeScreen(),
+        title: 'Ailee',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
+          fontFamily: 'Pretendard',
+        ),
+        home: const AuthWrapper(),
+        routes: {
+          '/main': (context) => const HomeScreen(),
+          '/login': (context) => const LoginScreen(),
+        },
       ),
+    );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    // 앱 시작 시 인증 상태 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthProvider>().initialize();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        // 로딩 중일 때
+        if (authProvider.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // 로그인 상태에 따라 화면 분기
+        if (authProvider.isLoggedIn) {
+          return const HomeScreen();
+        } else {
+          return const LoginScreen();
+        }
+      },
     );
   }
 }

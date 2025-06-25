@@ -1,20 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../providers/chat_provider.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
 
-/// 메인 채팅 화면 위젯
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  late ChatProvider _chatProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    _chatProvider.addListener(_onProviderChange);
+  }
+
+  @override
+  void dispose() {
+    _chatProvider.removeListener(_onProviderChange);
+    super.dispose();
+  }
+
+  void _onProviderChange() {
+    // 사용자가 메시지를 보낸 직후 (ChatProvider의 isLoading 상태가 true로 변경될 때)
+    if (_chatProvider.isLoading && mounted) {
+      final messages = _chatProvider.currentRoom?.messages ?? [];
+      if (messages.isNotEmpty) {
+        // 마지막 사용자 메시지의 인덱스를 찾음
+        final lastUserMessageIndex = messages.lastIndexWhere((m) => m.isUser);
+
+        if (lastUserMessageIndex != -1) {
+          // 위젯 빌드가 완료된 후 스크롤 실행
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_itemScrollController.isAttached) {
+              _itemScrollController.scrollTo(
+                index: lastUserMessageIndex,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                // Alignment를 0으로 설정하여 아이템의 시작(상단)이 뷰포트의 시작(상단)에 오도록 함
+                alignment: 0,
+              );
+            }
+          });
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        // 앱바 중앙에 챗봇 선택 위젯 배치
         title: Consumer<ChatProvider>(
           builder: (context, chatProvider, child) {
             return InkWell(
@@ -38,7 +84,6 @@ class ChatScreen extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          // 새 채팅방 생성 버튼
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
@@ -47,38 +92,56 @@ class ChatScreen extends StatelessWidget {
           ),
         ],
       ),
-      // 좌측 메뉴 (채팅방 목록)
       drawer: const _ChatDrawer(),
       body: Column(
         children: [
-          // 채팅 메시지 목록
           Expanded(
-            child: Consumer<ChatProvider>(
-              builder: (context, chatProvider, child) {
-                final messages = chatProvider.currentRoom?.messages ?? [];
-                return ListView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: messages.length + (chatProvider.isLoading ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    // 로딩 중이고 마지막 아이템인 경우 로딩 인디케이터 표시
-                    if (chatProvider.isLoading && index == messages.length) {
-                      return _buildLoadingIndicator();
-                    }
-                    final message = messages[index];
-                    return _buildMessageBubble(message);
+            // 1. LayoutBuilder로 감싸서 실제 사용 가능한 높이를 얻음
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Consumer<ChatProvider>(
+                  builder: (context, chatProvider, child) {
+                    final messages = chatProvider.currentRoom?.messages ?? [];
+                    final isLoading = chatProvider.isLoading;
+
+                    return ScrollablePositionedList.builder(
+                      itemScrollController: _itemScrollController,
+                      padding: const EdgeInsets.all(8),
+                      // 2. 맨 마지막에 공백을 추가하기 위해 아이템 카운트 +1
+                      itemCount: messages.length + (isLoading ? 1 : 0) + 1,
+                      itemBuilder: (context, index) {
+                        final messageCount = messages.length;
+                        final loadingItemIndex = messageCount;
+                        final spacerIndex = messageCount + (isLoading ? 1 : 0);
+
+                        // 로딩 인디케이터
+                        if (isLoading && index == loadingItemIndex) {
+                          return _buildLoadingIndicator();
+                        }
+
+                        // 3. 마지막 인덱스에 도달하면, 계산된 높이의 공백(SizedBox)을 추가
+                        if (index == spacerIndex) {
+                          // 화면 높이에서 메시지 하나 정도의 높이를 뺀 만큼 공백을 주어
+                          // 마지막 메시지가 화면 상단에 위치할 수 있는 충분한 공간을 확보
+                          return SizedBox(height: constraints.maxHeight - 80);
+                        }
+
+                        // 일반 메시지 버블
+                        final message = messages[index];
+                        return _buildMessageBubble(message);
+                      },
+                    );
                   },
                 );
               },
             ),
           ),
-          // 하단 메시지 입력 영역
           const _MessageInput(),
         ],
       ),
     );
   }
 
-  /// 챗봇 선택 다이얼로그 표시
   void _showBotSelectionDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -107,16 +170,13 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
-  /// 채팅 메시지 버블 위젯
   Widget _buildMessageBubble(ChatMessage message) {
     return Align(
-      // 사용자/봇 메시지에 따라 정렬 위치 변경
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          // 사용자/봇 메시지에 따라 색상 변경
           color: message.isUser ? Colors.blue : Colors.grey[300],
           borderRadius: BorderRadius.circular(12),
         ),
@@ -129,7 +189,6 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
-  /// 로딩 인디케이터 위젯
   Widget _buildLoadingIndicator() {
     return Align(
       alignment: Alignment.centerLeft,
@@ -141,36 +200,29 @@ class ChatScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         constraints: const BoxConstraints(maxWidth: 40),
-        child: const SpinKitPulse(
-          color: Colors.grey,
-          size: 24.0,
-        ),
+        child: const SpinKitPulse(color: Colors.grey, size: 24.0),
       ),
     );
   }
 }
 
-/// 좌측 메뉴 (채팅방 목록) 위젯
+// _ChatDrawer와 _MessageInput 위젯은 변경사항이 없으므로 그대로 유지합니다.
 class _ChatDrawer extends StatelessWidget {
   const _ChatDrawer();
-
   @override
   Widget build(BuildContext context) {
     return Drawer(
       child: Consumer<ChatProvider>(
         builder: (context, chatProvider, child) {
-          // 현재 선택된 챗봇의 채팅방만 필터링
           final rooms =
               chatProvider.chatRooms
                   .where((room) => room.bot.id == chatProvider.currentBot.id)
                   .toList()
-                ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)); // 최신순 정렬
-
+                ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
           return Column(
             children: [
-              // 드로어 헤더 (현재 챗봇 이름 표시)
               DrawerHeader(
-                decoration: BoxDecoration(color: Colors.blue),
+                decoration: const BoxDecoration(color: Colors.blue),
                 child: Center(
                   child: Text(
                     '${chatProvider.currentBot.name}\'s Chats',
@@ -178,14 +230,12 @@ class _ChatDrawer extends StatelessWidget {
                   ),
                 ),
               ),
-              // 채팅방 목록
               Expanded(
                 child: ListView.builder(
                   itemCount: rooms.length,
                   itemBuilder: (context, index) {
                     final room = rooms[index];
                     final isSelected = room.id == chatProvider.currentRoom?.id;
-
                     return ListTile(
                       title: Text(room.title),
                       subtitle: Text(
@@ -212,29 +262,26 @@ class _ChatDrawer extends StatelessWidget {
   }
 }
 
-/// 하단 메시지 입력 영역 위젯
 class _MessageInput extends StatefulWidget {
   const _MessageInput();
-
   @override
   State<_MessageInput> createState() => _MessageInputState();
 }
 
 class _MessageInputState extends State<_MessageInput> {
   final _controller = TextEditingController();
-
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
 
-  /// 메시지 전송 처리
   void _sendMessage() {
     final message = _controller.text;
     if (message.trim().isNotEmpty) {
       context.read<ChatProvider>().sendMessage(message);
       _controller.clear();
+      FocusScope.of(context).unfocus();
     }
   }
 
@@ -255,7 +302,6 @@ class _MessageInputState extends State<_MessageInput> {
       ),
       child: Row(
         children: [
-          // 메시지 입력 필드
           Expanded(
             child: TextField(
               controller: _controller,
@@ -273,7 +319,6 @@ class _MessageInputState extends State<_MessageInput> {
             ),
           ),
           const SizedBox(width: 8),
-          // 전송 버튼
           Consumer<ChatProvider>(
             builder: (context, chatProvider, child) {
               return IconButton(
