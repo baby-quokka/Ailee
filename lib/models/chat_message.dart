@@ -15,11 +15,11 @@ class ChatMessage {
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
-      id: json['id'],
-      sessionId: json['session'],
-      sender: json['sender'],
-      message: json['message'],
-      order: json['order'],
+      id: json['id'] ?? 0,
+      sessionId: json['session'] ?? 0,
+      sender: json['sender'] ?? 'user',
+      message: json['message'] ?? '',
+      order: json['order'] ?? 0,
     );
   }
 

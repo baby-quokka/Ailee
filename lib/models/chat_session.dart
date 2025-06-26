@@ -19,13 +19,13 @@ class ChatSession {
 
   factory ChatSession.fromJson(Map<String, dynamic> json) {
     return ChatSession(
-      id: json['id'],
-      characterId: json['character'],
-      userId: json['user'],
+      id: json['id'] ?? 0,
+      characterId: json['character'] ?? 0,
+      userId: json['user'] ?? 0,
       summary: json['summary'] ?? '',
       topic: json['topic'] ?? 'None',
-      time: DateTime.parse(json['time']),
-      startTime: DateTime.parse(json['start_time']),
+      time: json['time'] != null ? DateTime.parse(json['time']) : DateTime.now(),
+      startTime: json['start_time'] != null ? DateTime.parse(json['start_time']) : DateTime.now(),
     );
   }
 

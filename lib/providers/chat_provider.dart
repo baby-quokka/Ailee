@@ -26,8 +26,6 @@ class ChatProvider with ChangeNotifier {
   /// 사용자 ID 설정
   void setCurrentUserId(int userId) {
     _currentUserId = userId;
-    print('!!!!!!!!!!!!!!!!!');
-    print('setCurrentUserId: $_currentUserId');
     // 사용자 ID가 0이면 로그아웃 상태로 처리
     if (userId == 0) {
       _currentUserId = null;
@@ -66,6 +64,11 @@ class ChatProvider with ChangeNotifier {
     _currentRoom = room;
     _currentBot = room.bot; // 채팅방의 챗봇으로 현재 챗봇 변경
     notifyListeners();
+    
+    // 채팅방 선택 시 해당 세션의 메시지 로드
+    if (room.messages.isEmpty) {
+      loadSessionMessages(roomId);
+    }
   }
 
   /// 사용자의 채팅 세션을 로드하는 메서드
@@ -175,7 +178,7 @@ class ChatProvider with ChangeNotifier {
     // 사용자 메시지 추가
     final userMessage = ChatMessage(
       id: 0, // 임시 ID (백엔드에서 생성됨)
-      sessionId: int.parse(_currentRoom!.id),
+      sessionId: _currentRoom!.id == const Uuid().v4() ? 0 : int.parse(_currentRoom!.id),
       message: content,
       sender: 'user',
       order: _currentRoom!.messages.length,
@@ -210,7 +213,7 @@ class ChatProvider with ChangeNotifier {
       // 봇 응답 메시지 추가
       final botMessage = ChatMessage(
         id: 0, // 임시 ID (백엔드에서 생성됨)
-        sessionId: int.parse(_currentRoom!.id),
+        sessionId: _currentRoom!.id == const Uuid().v4() ? 0 : int.parse(_currentRoom!.id),
         message: response['response'],
         sender: 'model',
         order: _currentRoom!.messages.length,
@@ -232,7 +235,7 @@ class ChatProvider with ChangeNotifier {
       // 에러 발생 시 에러 메시지 추가
       final errorMessage = ChatMessage(
         id: 0, // 임시 ID (백엔드에서 생성됨)
-        sessionId: int.parse(_currentRoom!.id),
+        sessionId: _currentRoom!.id == const Uuid().v4() ? 0 : int.parse(_currentRoom!.id),
         message: 'Error: ${e.toString()}',
         sender: 'model',
         order: _currentRoom!.messages.length,

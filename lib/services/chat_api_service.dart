@@ -26,22 +26,22 @@ class ChatApiService {
   }
 
   // GET 요청 헬퍼
-  Future<Map<String, dynamic>> _get(String endpoint) async {
+  Future<T> _get<T>(String endpoint) async {
     try {
       final response = await _client
           .get(Uri.parse('${ApiConfig.baseUrl}$endpoint'), headers: _headers)
           .timeout(ApiConfig.timeout);
 
       _handleError(response);
-      return json.decode(response.body);
+      return json.decode(response.body) as T;
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('chat_api_service, get 네트워크 오류가 발생했습니다: $e', 0);
+      throw ApiException('네트워크 오류가 발생했습니다: $e', 0);
     }
   }
 
   // POST 요청 헬퍼
-  Future<Map<String, dynamic>> _post(
+  Future<T> _post<T>(
     String endpoint,
     Map<String, dynamic> data,
   ) async {
@@ -55,7 +55,7 @@ class ChatApiService {
           .timeout(ApiConfig.timeout);
 
       _handleError(response);
-      return json.decode(response.body);
+      return json.decode(response.body) as T;
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('네트워크 오류가 발생했습니다: $e', 0);
@@ -64,16 +64,14 @@ class ChatApiService {
 
   // 유저의 모든 채팅 세션 조회
   Future<List<ChatSession>> getUserSessions(int userId) async {
-    final response = await _get('${ApiConfig.chatSessions}$userId/sessions/');
-    final List<dynamic> sessionsJson = (response as List<dynamic>);
-    return sessionsJson.map((json) => ChatSession.fromJson(json)).toList();
+    final response = await _get<List<dynamic>>('${ApiConfig.chatSessions}$userId/sessions/');
+    return response.map((json) => ChatSession.fromJson(json)).toList();
   }
 
   // 특정 세션의 메시지 조회
   Future<List<ChatMessage>> getSessionMessages(int sessionId) async {
-    final response = await _get('${ApiConfig.chatSession}$sessionId/');
-    final List<dynamic> messagesJson = (response as List<dynamic>);
-    return messagesJson.map((json) => ChatMessage.fromJson(json)).toList();
+    final response = await _get<List<dynamic>>('${ApiConfig.chatSession}$sessionId/');
+    return response.map((json) => ChatMessage.fromJson(json)).toList();
   }
 
   // 메시지 전송 및 챗봇 답변 받기
@@ -96,7 +94,7 @@ class ChatApiService {
       data['session_id'] = sessionId;
     }
 
-    final response = await _post(ApiConfig.chatSession, data);
+    final response = await _post<Map<String, dynamic>>(ApiConfig.chatSession, data);
     return {
       'response': response['response'],
       'is_fa': response['is_fa'] ?? false,
