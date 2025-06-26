@@ -36,7 +36,7 @@ class ChatApiService {
       return json.decode(response.body);
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('네트워크 오류가 발생했습니다: $e', 0);
+      throw ApiException('chat_api_service, get 네트워크 오류가 발생했습니다: $e', 0);
     }
   }
 

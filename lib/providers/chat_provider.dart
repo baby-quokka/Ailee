@@ -26,6 +26,17 @@ class ChatProvider with ChangeNotifier {
   /// 사용자 ID 설정
   void setCurrentUserId(int userId) {
     _currentUserId = userId;
+    print('!!!!!!!!!!!!!!!!!');
+    print('setCurrentUserId: $_currentUserId');
+    // 사용자 ID가 0이면 로그아웃 상태로 처리
+    if (userId == 0) {
+      _currentUserId = null;
+      _chatRooms.clear();
+      _currentRoom = null;
+      notifyListeners();
+      return;
+    }
+
     _loadUserSessions(); // 사용자 세션 로드
   }
 
@@ -82,6 +93,26 @@ class ChatProvider with ChangeNotifier {
         );
         _chatRooms.add(room);
       }
+
+      // 디버깅: 채팅방 정보 출력
+      print('=== _loadUserSessions 디버깅 ===');
+      print('사용자 ID: $_currentUserId');
+      print('서버에서 받은 세션 수: ${sessions.length}');
+      print('변환된 채팅방 수: ${_chatRooms.length}');
+      print('--- 각 채팅방 정보 ---');
+      for (int i = 0; i < _chatRooms.length; i++) {
+        final room = _chatRooms[i];
+        print('채팅방 ${i + 1}:');
+        print('  ID: ${room.id}');
+        print('  제목: ${room.title}');
+        print('  봇: ${room.bot.name} (${room.bot.id})');
+        print('  생성일: ${room.createdAt}');
+        print('  수정일: ${room.updatedAt}');
+        print('  메시지 수: ${room.messages.length}');
+        print('  ---');
+      }
+      print('=== 디버깅 완료 ===');
+
       notifyListeners();
     } catch (e) {
       print('세션 로드 오류: $e');

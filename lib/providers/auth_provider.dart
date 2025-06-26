@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../providers/chat_provider.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
+  ChatProvider? _chatProvider;
 
   User? _currentUser;
   bool _isLoading = false;
@@ -13,6 +15,11 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _currentUser != null;
+
+  // ChatProvider 설정 메서드
+  void setChatProvider(ChatProvider chatProvider) {
+    _chatProvider = chatProvider;
+  }
 
   // 초기화 - 앱 시작 시 로그인 상태 확인
   Future<void> initialize() async {
@@ -32,7 +39,9 @@ class AuthProvider extends ChangeNotifier {
       // TODO: SharedPreferences에 사용자 정보 저장
 
       // ChatProvider에 사용자 ID 설정
-      // Provider.of<ChatProvider>(context, listen: false).setCurrentUserId(user.id);
+      if (_chatProvider != null) {
+        _chatProvider!.setCurrentUserId(user.id);
+      }
 
       notifyListeners();
       return true;
@@ -72,6 +81,12 @@ class AuthProvider extends ChangeNotifier {
 
       _currentUser = user;
       // TODO: SharedPreferences에 사용자 정보 저장
+
+      // ChatProvider에 사용자 ID 설정
+      if (_chatProvider != null) {
+        _chatProvider!.setCurrentUserId(user.id);
+      }
+
       notifyListeners();
       return true;
     } on ApiException catch (e) {
@@ -94,6 +109,12 @@ class AuthProvider extends ChangeNotifier {
     try {
       _currentUser = null;
       // TODO: SharedPreferences에서 사용자 정보 삭제
+
+      // ChatProvider에서 사용자 ID 초기화
+      if (_chatProvider != null) {
+        _chatProvider!.setCurrentUserId(0); // 0은 유효하지 않은 ID로 처리
+      }
+
       _clearError();
       notifyListeners();
     } catch (e) {

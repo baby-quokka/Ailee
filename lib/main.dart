@@ -45,7 +45,22 @@ class MyApp extends StatelessWidget {
             return chatProvider;
           },
         ),
-        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final authProvider = AuthProvider();
+
+            // ChatProvider와 AuthProvider 연결
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final chatProvider = Provider.of<ChatProvider>(
+                context,
+                listen: false,
+              );
+              authProvider.setChatProvider(chatProvider);
+            });
+
+            return authProvider;
+          },
+        ),
       ],
       child: MaterialApp(
         title: 'Ailee',
