@@ -182,7 +182,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         constraints: const BoxConstraints(maxWidth: 280),
         child: Text(
-          message.content,
+          message.message,
           style: TextStyle(color: message.isUser ? Colors.white : Colors.black),
         ),
       ),
@@ -241,7 +241,7 @@ class _ChatDrawer extends StatelessWidget {
                       subtitle: Text(
                         room.messages.isEmpty
                             ? 'No messages'
-                            : room.messages.last.content,
+                            : room.messages.last.message,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
