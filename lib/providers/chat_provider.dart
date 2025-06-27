@@ -4,17 +4,14 @@ import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
 import '../models/chat_session.dart';
 import '../services/chat_api_service.dart';
-import '../services/notification_service.dart';
 
 /// 채팅 관련 상태를 관리하는 Provider 클래스
 class ChatProvider with ChangeNotifier {
   final ChatApiService _chatApiService = ChatApiService();
-  final NotificationService _notificationService = NotificationService();
   final List<ChatSession> _chatSessions = []; // 모든 채팅 세션 목록
   ChatBot _currentBot = ChatBot.bots[0]; // 현재 선택된 챗봇
   ChatSession? _currentSession; // 현재 열린 채팅 세션
   bool _isLoading = false; // 메시지 전송 중 여부
-  VoidCallback? _notificationCallback; // 알림 탭 시 호출될 콜백
   int? _currentUserId; // 현재 로그인한 사용자 ID
 
   // Getter 메서드들
@@ -36,11 +33,6 @@ class ChatProvider with ChangeNotifier {
     }
 
     _loadUserSessions(); // 사용자 세션 로드
-  }
-
-  /// 알림 콜백 설정
-  void setNotificationCallback(VoidCallback callback) {
-    _notificationCallback = callback;
   }
 
   /// 현재 챗봇을 변경하는 메서드
@@ -285,82 +277,5 @@ class ChatProvider with ChangeNotifier {
 
     // 즉시 초기 메시지 전송
     await sendMessage(initialMessage);
-  }
-
-  /// 알림을 통해 대화 시작
-  Future<void> startConversationFromNotification({
-    required ChatBot bot,
-    required String message,
-  }) async {
-    // 챗봇 변경
-    setCurrentBot(bot);
-
-    // 새 세션 생성
-    _currentSession = ChatSession(
-      id: 0,
-      characterId: ChatSession.getCharacterIdFromBotId(bot.id),
-      userId: _currentUserId!,
-      summary: '체크인',
-      topic: 'None',
-      time: DateTime.now(),
-      startTime: DateTime.now(),
-      messages: [],
-      bot: bot,
-    );
-    _chatSessions.add(_currentSession!);
-    notifyListeners();
-
-    // 즉시 메시지 전송
-    await sendMessage(message);
-  }
-
-  /// 봇 체크인 알림을 예약하는 메서드
-  Future<void> scheduleBotCheckIn({
-    required ChatBot bot,
-    required String message,
-    required DateTime scheduledDate,
-  }) async {
-    await _notificationService.scheduleBotCheckIn(
-      bot: bot,
-      message: message,
-      scheduledDate: scheduledDate,
-    );
-  }
-
-  /// 즉시 테스트 알림 보내기
-  Future<void> sendTestNotification() async {
-    await _notificationService.showNotification(
-      title: '${_currentBot.name}의 체크인',
-      body: '요즘 힘든 일 없어?',
-      payload:
-          {
-            'botId': _currentBot.id,
-            'botName': _currentBot.name,
-            'message': '요즘 힘든 일 없어?',
-            'type': 'check_in',
-          }.toString(),
-    );
-  }
-
-  /// 알림 페이로드 처리
-  void handleNotificationPayload(String payload) {
-    try {
-      // 페이로드 파싱: "check_in:botId:botName" 형식
-      if (payload.startsWith('check_in:')) {
-        final parts = payload.split(':');
-
-        if (parts.length >= 3) {
-          final botId = parts[1];
-          final bot = ChatBot.bots.firstWhere(
-            (b) => b.id == botId,
-            orElse: () => ChatBot.bots[0], // 기본값으로 Ailee
-          );
-
-          startConversationFromNotification(bot: bot, message: '요즘 힘든일이 있어.');
-        }
-      }
-    } catch (e) {
-      print('알림 페이로드 처리 중 오류: $e');
-    }
   }
 }

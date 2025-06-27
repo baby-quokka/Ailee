@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>이 앱은 로컬 네트워크 기능을 사용하여 디버깅 서비스를 제공합니다.</string>
+	<key>NSBonjourServices</key>
+	<array>
+    	<string>_dartobservatory._tcp</string>
+	</array>
 </dict>
 </plist>

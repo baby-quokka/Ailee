@@ -33,14 +33,6 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // ChatProvider의 알림 처리 메서드를 오버라이드
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-      // 알림 탭 콜백을 다시 설정하여 HomeScreen의 switchToChatScreen을 호출하도록 함
-      chatProvider.setNotificationCallback(() {
-        switchToChatScreen();
-      });
-    });
   }
 
   @override
