@@ -4,6 +4,7 @@ import '../config/api_config.dart';
 import '../models/chat_session.dart';
 import '../models/chat_message.dart';
 
+/// 백엔드 API와 통신하는 채팅 서비스 클래스
 class ChatApiService {
   static final ChatApiService _instance = ChatApiService._internal();
   factory ChatApiService() => _instance;
@@ -41,10 +42,7 @@ class ChatApiService {
   }
 
   // POST 요청 헬퍼
-  Future<T> _post<T>(
-    String endpoint,
-    Map<String, dynamic> data,
-  ) async {
+  Future<T> _post<T>(String endpoint, Map<String, dynamic> data) async {
     try {
       final response = await _client
           .post(
@@ -64,13 +62,17 @@ class ChatApiService {
 
   // 유저의 모든 채팅 세션 조회
   Future<List<ChatSession>> getUserSessions(int userId) async {
-    final response = await _get<List<dynamic>>('${ApiConfig.chatSessions}$userId/sessions/');
+    final response = await _get<List<dynamic>>(
+      '${ApiConfig.chatSessions}$userId/sessions/',
+    );
     return response.map((json) => ChatSession.fromJson(json)).toList();
   }
 
   // 특정 세션의 메시지 조회
   Future<List<ChatMessage>> getSessionMessages(int sessionId) async {
-    final response = await _get<List<dynamic>>('${ApiConfig.chatSession}$sessionId/');
+    final response = await _get<List<dynamic>>(
+      '${ApiConfig.chatSession}$sessionId/',
+    );
     return response.map((json) => ChatMessage.fromJson(json)).toList();
   }
 
@@ -82,7 +84,7 @@ class ChatApiService {
     required int characterId,
     bool isWorkflow = false,
   }) async {
-    final data = {
+    final data = <String, dynamic>{
       'user_input': userInput,
       'user_id': userId,
       'character_id': characterId,
@@ -94,7 +96,11 @@ class ChatApiService {
       data['session_id'] = sessionId;
     }
 
-    final response = await _post<Map<String, dynamic>>(ApiConfig.chatSession, data);
+    final response = await _post<Map<String, dynamic>>(
+      ApiConfig.chatSession,
+      data,
+    );
+
     return {
       'response': response['response'],
       'is_fa': response['is_fa'] ?? false,

@@ -33,7 +33,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _onProviderChange() {
     // 사용자가 메시지를 보낸 직후 (ChatProvider의 isLoading 상태가 true로 변경될 때)
     if (_chatProvider.isLoading && mounted) {
-      final messages = _chatProvider.currentRoom?.messages ?? [];
+      final messages = _chatProvider.currentSession?.messages ?? [];
       if (messages.isNotEmpty) {
         // 마지막 사용자 메시지의 인덱스를 찾음
         final lastUserMessageIndex = messages.lastIndexWhere((m) => m.isUser);
@@ -87,7 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              context.read<ChatProvider>().createNewRoom();
+              context.read<ChatProvider>().createNewSession();
             },
           ),
         ],
@@ -101,7 +101,8 @@ class _ChatScreenState extends State<ChatScreen> {
               builder: (context, constraints) {
                 return Consumer<ChatProvider>(
                   builder: (context, chatProvider, child) {
-                    final messages = chatProvider.currentRoom?.messages ?? [];
+                    final messages =
+                        chatProvider.currentSession?.messages ?? [];
                     final isLoading = chatProvider.isLoading;
 
                     return ScrollablePositionedList.builder(
@@ -214,9 +215,11 @@ class _ChatDrawer extends StatelessWidget {
     return Drawer(
       child: Consumer<ChatProvider>(
         builder: (context, chatProvider, child) {
-          final rooms =
-              chatProvider.chatRooms
-                  .where((room) => room.bot.id == chatProvider.currentBot.id)
+          final sessions =
+              chatProvider.chatSessions
+                  .where(
+                    (session) => session.bot?.id == chatProvider.currentBot.id,
+                  )
                   .toList()
                 ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
           return Column(
@@ -232,22 +235,23 @@ class _ChatDrawer extends StatelessWidget {
               ),
               Expanded(
                 child: ListView.builder(
-                  itemCount: rooms.length,
+                  itemCount: sessions.length,
                   itemBuilder: (context, index) {
-                    final room = rooms[index];
-                    final isSelected = room.id == chatProvider.currentRoom?.id;
+                    final session = sessions[index];
+                    final isSelected =
+                        session.id == chatProvider.currentSession?.id;
                     return ListTile(
-                      title: Text(room.title),
+                      title: Text(session.displayTitle),
                       subtitle: Text(
-                        room.messages.isEmpty
+                        session.messages.isEmpty
                             ? 'No messages'
-                            : room.messages.last.message,
+                            : session.messages.last.message,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       selected: isSelected,
                       onTap: () {
-                        chatProvider.selectRoom(room.id);
+                        chatProvider.selectSession(session.id);
                         Navigator.pop(context);
                       },
                     );

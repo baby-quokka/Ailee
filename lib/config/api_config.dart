@@ -1,6 +1,6 @@
 class ApiConfig {
   // 개발 환경
-  static const String baseUrl = 'http://10.64.140.185:8000/api';
+  static const String baseUrl = 'http://10.0.2.2:8000/api';
 
   // API 엔드포인트
   static const String userCreate = '/user/create/';
@@ -20,5 +20,5 @@ class ApiConfig {
   };
 
   // 타임아웃 설정
-  static const Duration timeout = Duration(seconds: 30);
+  static const Duration timeout = Duration(seconds: 10);
 }

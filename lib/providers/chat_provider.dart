@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
-import '../models/chat_room.dart';
+import '../models/chat_session.dart';
 import '../services/chat_api_service.dart';
 import '../services/notification_service.dart';
 
@@ -10,17 +10,17 @@ import '../services/notification_service.dart';
 class ChatProvider with ChangeNotifier {
   final ChatApiService _chatApiService = ChatApiService();
   final NotificationService _notificationService = NotificationService();
-  final List<ChatRoom> _chatRooms = []; // 모든 채팅방 목록
+  final List<ChatSession> _chatSessions = []; // 모든 채팅 세션 목록
   ChatBot _currentBot = ChatBot.bots[0]; // 현재 선택된 챗봇
-  ChatRoom? _currentRoom; // 현재 열린 채팅방
+  ChatSession? _currentSession; // 현재 열린 채팅 세션
   bool _isLoading = false; // 메시지 전송 중 여부
   VoidCallback? _notificationCallback; // 알림 탭 시 호출될 콜백
   int? _currentUserId; // 현재 로그인한 사용자 ID
 
   // Getter 메서드들
-  List<ChatRoom> get chatRooms => _chatRooms;
+  List<ChatSession> get chatSessions => _chatSessions;
   ChatBot get currentBot => _currentBot;
-  ChatRoom? get currentRoom => _currentRoom;
+  ChatSession? get currentSession => _currentSession;
   bool get isLoading => _isLoading;
 
   /// 사용자 ID 설정
@@ -29,8 +29,8 @@ class ChatProvider with ChangeNotifier {
     // 사용자 ID가 0이면 로그아웃 상태로 처리
     if (userId == 0) {
       _currentUserId = null;
-      _chatRooms.clear();
-      _currentRoom = null;
+      _chatSessions.clear();
+      _currentSession = null;
       notifyListeners();
       return;
     }
@@ -47,27 +47,29 @@ class ChatProvider with ChangeNotifier {
   void setCurrentBot(ChatBot bot) {
     if (_currentBot.id != bot.id) {
       _currentBot = bot;
-      _currentRoom = null; // 챗봇 변경 시 현재 채팅방 초기화
+      _currentSession = null; // 챗봇 변경 시 현재 세션 초기화
       notifyListeners();
     }
   }
 
-  /// 새 채팅방을 생성하는 메서드
-  void createNewRoom() {
-    _currentRoom = null; // 현재 채팅방 초기화
+  /// 새 채팅 세션을 생성하는 메서드
+  void createNewSession() {
+    _currentSession = null; // 현재 세션 초기화
     notifyListeners();
   }
 
-  /// 특정 채팅방을 선택하는 메서드
-  void selectRoom(String roomId) {
-    final room = _chatRooms.firstWhere((room) => room.id == roomId);
-    _currentRoom = room;
-    _currentBot = room.bot; // 채팅방의 챗봇으로 현재 챗봇 변경
+  /// 특정 채팅 세션을 선택하는 메서드
+  void selectSession(int sessionId) {
+    final session = _chatSessions.firstWhere(
+      (session) => session.id == sessionId,
+    );
+    _currentSession = session;
+    _currentBot = session.bot ?? _currentBot; // 세션의 챗봇으로 현재 챗봇 변경
     notifyListeners();
-    
-    // 채팅방 선택 시 해당 세션의 메시지 로드
-    if (room.messages.isEmpty) {
-      loadSessionMessages(roomId);
+
+    // 세션 선택 시 해당 세션의 메시지 로드
+    if (session.messages.isEmpty) {
+      loadSessionMessages(sessionId);
     }
   }
 
@@ -78,40 +80,35 @@ class ChatProvider with ChangeNotifier {
     try {
       final sessions = await _chatApiService.getUserSessions(_currentUserId!);
 
-      // 세션을 ChatRoom으로 변환
-      _chatRooms.clear();
+      // 세션에 bot 정보 추가
+      _chatSessions.clear();
       for (final session in sessions) {
         final bot = ChatBot.bots.firstWhere(
-          (bot) => bot.id == _getBotIdFromCharacterId(session.characterId),
+          (bot) =>
+              bot.id ==
+              ChatSession.getBotIdFromCharacterId(session.characterId),
           orElse: () => ChatBot.bots[0],
         );
 
-        final room = ChatRoom(
-          id: session.id.toString(),
-          title: session.summary.isNotEmpty ? session.summary : '새로운 대화',
-          bot: bot,
-          messages: [], // 메시지는 필요할 때 로드
-          createdAt: session.startTime,
-          updatedAt: session.time,
-        );
-        _chatRooms.add(room);
+        final sessionWithBot = session.copyWith(bot: bot);
+        _chatSessions.add(sessionWithBot);
       }
 
-      // 디버깅: 채팅방 정보 출력
+      // 디버깅: 채팅 세션 정보 출력
       print('=== _loadUserSessions 디버깅 ===');
       print('사용자 ID: $_currentUserId');
       print('서버에서 받은 세션 수: ${sessions.length}');
-      print('변환된 채팅방 수: ${_chatRooms.length}');
-      print('--- 각 채팅방 정보 ---');
-      for (int i = 0; i < _chatRooms.length; i++) {
-        final room = _chatRooms[i];
-        print('채팅방 ${i + 1}:');
-        print('  ID: ${room.id}');
-        print('  제목: ${room.title}');
-        print('  봇: ${room.bot.name} (${room.bot.id})');
-        print('  생성일: ${room.createdAt}');
-        print('  수정일: ${room.updatedAt}');
-        print('  메시지 수: ${room.messages.length}');
+      print('변환된 세션 수: ${_chatSessions.length}');
+      print('--- 각 세션 정보 ---');
+      for (int i = 0; i < _chatSessions.length; i++) {
+        final session = _chatSessions[i];
+        print('세션 ${i + 1}:');
+        print('  ID: ${session.id}');
+        print('  제목: ${session.displayTitle}');
+        print('  봇: ${session.bot?.name} (${session.bot?.id})');
+        print('  생성일: ${session.startTime}');
+        print('  수정일: ${session.updatedAt}');
+        print('  메시지 수: ${session.messages.length}');
         print('  ---');
       }
       print('=== 디버깅 완료 ===');
@@ -123,13 +120,11 @@ class ChatProvider with ChangeNotifier {
   }
 
   /// 세션의 메시지를 로드하는 메서드
-  Future<void> loadSessionMessages(String sessionId) async {
+  Future<void> loadSessionMessages(int sessionId) async {
     try {
-      final messages = await _chatApiService.getSessionMessages(
-        int.parse(sessionId),
-      );
+      final messages = await _chatApiService.getSessionMessages(sessionId);
 
-      // ChatMessage를 ChatRoom의 메시지 형식으로 변환
+      // ChatMessage를 ChatSession의 메시지 형식으로 변환
       final chatMessages =
           messages
               .map(
@@ -143,14 +138,14 @@ class ChatProvider with ChangeNotifier {
               )
               .toList();
 
-      // 현재 채팅방 업데이트
-      if (_currentRoom != null && _currentRoom!.id == sessionId) {
-        final updatedRoom = _currentRoom!.copyWith(
+      // 현재 세션 업데이트
+      if (_currentSession != null && _currentSession!.id == sessionId) {
+        final updatedSession = _currentSession!.copyWith(
           messages: chatMessages,
-          updatedAt: DateTime.now(),
+          time: DateTime.now(),
         );
-        _updateRoom(updatedRoom);
-        _currentRoom = updatedRoom;
+        _updateSession(updatedSession);
+        _currentSession = updatedSession;
         notifyListeners();
       }
     } catch (e) {
@@ -162,35 +157,39 @@ class ChatProvider with ChangeNotifier {
   Future<void> sendMessage(String content) async {
     if (content.trim().isEmpty || _currentUserId == null) return;
 
-    // 첫 메시지인 경우 새 채팅방 생성
-    if (_currentRoom == null) {
-      _currentRoom = ChatRoom(
-        id: const Uuid().v4(), // 임시 ID (백엔드에서 생성됨)
-        title: content.length > 30 ? '${content.substring(0, 30)}...' : content,
-        bot: _currentBot,
+    // 첫 메시지인 경우 새 세션 생성
+    if (_currentSession == null) {
+      _currentSession = ChatSession(
+        id: 0, // 임시 ID (백엔드에서 생성됨)
+        characterId: ChatSession.getCharacterIdFromBotId(_currentBot.id),
+        userId: _currentUserId!,
+        summary:
+            content.length > 30 ? '${content.substring(0, 30)}...' : content,
+        topic: 'None',
+        time: DateTime.now(),
+        startTime: DateTime.now(),
         messages: [],
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        bot: _currentBot,
       );
-      _chatRooms.add(_currentRoom!);
+      _chatSessions.add(_currentSession!);
     }
 
     // 사용자 메시지 추가
     final userMessage = ChatMessage(
       id: 0, // 임시 ID (백엔드에서 생성됨)
-      sessionId: _currentRoom!.id == const Uuid().v4() ? 0 : int.parse(_currentRoom!.id),
+      sessionId: _currentSession!.id == 0 ? 0 : _currentSession!.id,
       message: content,
       sender: 'user',
-      order: _currentRoom!.messages.length,
+      order: _currentSession!.messages.length,
     );
 
-    // 현재 채팅방에 사용자 메시지 추가
-    final updatedRoom = _currentRoom!.copyWith(
-      messages: [..._currentRoom!.messages, userMessage],
-      updatedAt: DateTime.now(),
+    // 현재 세션에 사용자 메시지 추가
+    final updatedSession = _currentSession!.copyWith(
+      messages: [..._currentSession!.messages, userMessage],
+      time: DateTime.now(),
     );
-    _updateRoom(updatedRoom);
-    _currentRoom = updatedRoom;
+    _updateSession(updatedSession);
+    _currentSession = updatedSession;
     notifyListeners();
 
     // 로딩 상태 시작
@@ -200,52 +199,49 @@ class ChatProvider with ChangeNotifier {
     try {
       // 백엔드 API에 메시지 전송
       final response = await _chatApiService.sendMessage(
-        sessionId:
-            _currentRoom!.id != const Uuid().v4()
-                ? int.parse(_currentRoom!.id)
-                : null,
+        sessionId: _currentSession!.id == 0 ? null : _currentSession!.id,
         userInput: content,
         userId: _currentUserId!,
-        characterId: _getCharacterIdFromBotId(_currentBot.id),
+        characterId: ChatSession.getCharacterIdFromBotId(_currentBot.id),
         isWorkflow: false,
       );
 
       // 봇 응답 메시지 추가
       final botMessage = ChatMessage(
         id: 0, // 임시 ID (백엔드에서 생성됨)
-        sessionId: _currentRoom!.id == const Uuid().v4() ? 0 : int.parse(_currentRoom!.id),
+        sessionId: _currentSession!.id == 0 ? 0 : _currentSession!.id,
         message: response['response'],
         sender: 'model',
-        order: _currentRoom!.messages.length,
+        order: _currentSession!.messages.length,
       );
 
-      // 현재 채팅방에 봇 응답 추가
-      final updatedRoomWithResponse = _currentRoom!.copyWith(
-        messages: [..._currentRoom!.messages, botMessage],
-        updatedAt: DateTime.now(),
+      // 현재 세션에 봇 응답 추가
+      final updatedSessionWithResponse = _currentSession!.copyWith(
+        messages: [..._currentSession!.messages, botMessage],
+        time: DateTime.now(),
       );
-      _updateRoom(updatedRoomWithResponse);
-      _currentRoom = updatedRoomWithResponse;
+      _updateSession(updatedSessionWithResponse);
+      _currentSession = updatedSessionWithResponse;
 
       // 새 세션이 생성된 경우 세션 목록 새로고침
-      if (_currentRoom!.id == const Uuid().v4()) {
+      if (_currentSession!.id == 0) {
         await _loadUserSessions();
       }
     } catch (e) {
       // 에러 발생 시 에러 메시지 추가
       final errorMessage = ChatMessage(
         id: 0, // 임시 ID (백엔드에서 생성됨)
-        sessionId: _currentRoom!.id == const Uuid().v4() ? 0 : int.parse(_currentRoom!.id),
+        sessionId: _currentSession!.id == 0 ? 0 : _currentSession!.id,
         message: 'Error: ${e.toString()}',
         sender: 'model',
-        order: _currentRoom!.messages.length,
+        order: _currentSession!.messages.length,
       );
-      final updatedRoomWithError = _currentRoom!.copyWith(
-        messages: [..._currentRoom!.messages, errorMessage],
-        updatedAt: DateTime.now(),
+      final updatedSessionWithError = _currentSession!.copyWith(
+        messages: [..._currentSession!.messages, errorMessage],
+        time: DateTime.now(),
       );
-      _updateRoom(updatedRoomWithError);
-      _currentRoom = updatedRoomWithError;
+      _updateSession(updatedSessionWithError);
+      _currentSession = updatedSessionWithError;
     } finally {
       // 로딩 상태 종료
       _isLoading = false;
@@ -253,49 +249,13 @@ class ChatProvider with ChangeNotifier {
     }
   }
 
-  /// 채팅방 정보를 업데이트하는 내부 메서드
-  void _updateRoom(ChatRoom updatedRoom) {
-    final index = _chatRooms.indexWhere((room) => room.id == updatedRoom.id);
+  /// 세션 정보를 업데이트하는 내부 메서드
+  void _updateSession(ChatSession updatedSession) {
+    final index = _chatSessions.indexWhere(
+      (session) => session.id == updatedSession.id,
+    );
     if (index != -1) {
-      _chatRooms[index] = updatedRoom;
-    }
-  }
-
-  /// Bot ID를 Character ID로 변환
-  int _getCharacterIdFromBotId(String botId) {
-    // 임시 매핑 (실제로는 백엔드의 Character ID와 매핑 필요)
-    switch (botId) {
-      case 'ailee':
-        return 1;
-      case 'joon':
-        return 2;
-      case 'nick':
-        return 3;
-      case 'chad':
-        return 4;
-      case 'rin':
-        return 5;
-      default:
-        return 1;
-    }
-  }
-
-  /// Character ID를 Bot ID로 변환
-  String _getBotIdFromCharacterId(int characterId) {
-    // 임시 매핑 (실제로는 백엔드의 Character ID와 매핑 필요)
-    switch (characterId) {
-      case 1:
-        return 'ailee';
-      case 2:
-        return 'joon';
-      case 3:
-        return 'nick';
-      case 4:
-        return 'chad';
-      case 5:
-        return 'rin';
-      default:
-        return 'ailee';
+      _chatSessions[index] = updatedSession;
     }
   }
 
@@ -308,16 +268,19 @@ class ChatProvider with ChangeNotifier {
     // 챗봇 변경
     setCurrentBot(bot);
 
-    // 새 채팅방 생성
-    _currentRoom = ChatRoom(
-      id: const Uuid().v4(),
-      title: topic,
-      bot: bot,
+    // 새 세션 생성
+    _currentSession = ChatSession(
+      id: 0,
+      characterId: ChatSession.getCharacterIdFromBotId(bot.id),
+      userId: _currentUserId!,
+      summary: topic,
+      topic: topic,
+      time: DateTime.now(),
+      startTime: DateTime.now(),
       messages: [],
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      bot: bot,
     );
-    _chatRooms.add(_currentRoom!);
+    _chatSessions.add(_currentSession!);
     notifyListeners();
 
     // 즉시 초기 메시지 전송
@@ -332,29 +295,26 @@ class ChatProvider with ChangeNotifier {
     // 챗봇 변경
     setCurrentBot(bot);
 
-    // 새 채팅방 생성
-    _currentRoom = ChatRoom(
-      id: const Uuid().v4(),
-      title: '체크인',
-      bot: bot,
+    // 새 세션 생성
+    _currentSession = ChatSession(
+      id: 0,
+      characterId: ChatSession.getCharacterIdFromBotId(bot.id),
+      userId: _currentUserId!,
+      summary: '체크인',
+      topic: 'None',
+      time: DateTime.now(),
+      startTime: DateTime.now(),
       messages: [],
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      bot: bot,
     );
-    _chatRooms.add(_currentRoom!);
+    _chatSessions.add(_currentSession!);
     notifyListeners();
 
-    // 화면 전환
-    if (_notificationCallback != null) {
-      _notificationCallback!();
-
-      // 화면 전환 후 메시지 전송
-      await Future.delayed(const Duration(seconds: 2));
-      await sendMessage('요즘 힘든일이 있어.');
-    }
+    // 즉시 메시지 전송
+    await sendMessage(message);
   }
 
-  /// 챗봇 체크인 알림 예약
+  /// 봇 체크인 알림을 예약하는 메서드
   Future<void> scheduleBotCheckIn({
     required ChatBot bot,
     required String message,
