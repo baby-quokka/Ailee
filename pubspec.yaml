@@ -79,7 +79,27 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
+  fonts:
+    - family: NanumGothic
+      fonts:
+        - asset: assets/fonts/NanumGothic.ttf
+          weight: 400
+    - family: NanumGothicBold
+      fonts:
+        - asset: assets/fonts/NanumGothicBold.ttf
+          weight: 700
+    - family: SeoulNamsan
+      fonts:
+        - asset: assets/fonts/SeoulNamsanB.ttf
+          weight: 700
+    - family: SeoulHangang
+      fonts:
+        - asset: assets/fonts/SeoulHangangM.ttf
+          weight: 500
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf

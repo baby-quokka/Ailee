@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
 import '../models/chat_session.dart';

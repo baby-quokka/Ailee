@@ -41,13 +41,47 @@ class HomeScreenState extends State<HomeScreen> {
       value: Provider.of<ChatProvider>(context, listen: false),
       child: Scaffold(
         body: _pages[_selectedIndex],
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.chat), label: '채팅'),
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: '프로필'),
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: Colors.grey[300], // 앱바 경계와 동일한 색상 추천
+            ),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                child: BottomNavigationBar(
+                  elevation: 0,
+                  backgroundColor: Colors.white,
+                  selectedItemColor: Colors.black,
+                  unselectedItemColor: Colors.grey[500]!,
+                  currentIndex: _selectedIndex,
+                  onTap: _onItemTapped,
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.chat),
+                      label: '채팅',
+                    ),
+                    BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.person),
+                      label: '프로필',
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

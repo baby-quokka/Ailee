@@ -17,9 +17,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (context) => ChatProvider(),
-        ),
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
         ChangeNotifierProvider(
           create: (context) {
             final authProvider = AuthProvider();
@@ -40,6 +38,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Ailee',
         theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
           primarySwatch: Colors.blue,
           useMaterial3: true,
           fontFamily: 'Pretendard',

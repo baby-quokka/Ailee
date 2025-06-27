@@ -21,32 +21,32 @@ class ChatBot {
       systemPrompt: 'You are Ailee, a friendly and helpful AI assistant.',
     ),
     ChatBot(
-      id: 'ben',
-      name: 'Ben',
+      id: 'joon',
+      name: 'Joon',
       description: '전문적인 기술 전문가',
       systemPrompt:
-          'You are Ben, a technical expert who provides detailed and accurate information.',
+          'You are Joon, a technical expert who provides detailed and accurate information.',
     ),
     ChatBot(
-      id: 'clara',
-      name: 'Clara',
+      id: 'nick',
+      name: 'Nick',
       description: '창의적인 아이디어 생성기',
       systemPrompt:
-          'You are Clara, a creative AI that helps generate innovative ideas.',
+          'You are Nick, a creative AI that helps generate innovative ideas.',
     ),
     ChatBot(
-      id: 'david',
-      name: 'David',
+      id: 'chad',
+      name: 'Chad',
       description: '비즈니스 컨설턴트',
       systemPrompt:
-          'You are David, a business consultant who provides strategic advice.',
+          'You are Chad, a business consultant who provides strategic advice.',
     ),
     ChatBot(
-      id: 'emma',
-      name: 'Emma',
+      id: 'rin',
+      name: 'Rin',
       description: '학습 도우미',
       systemPrompt:
-          'You are Emma, an educational assistant who helps with learning and understanding concepts.',
+          'You are Rin, an educational assistant who helps with learning and understanding concepts.',
     ),
   ];
 }
