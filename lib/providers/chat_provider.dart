@@ -86,23 +86,23 @@ class ChatProvider with ChangeNotifier {
       }
 
       // 디버깅: 채팅 세션 정보 출력
-      print('=== _loadUserSessions 디버깅 ===');
-      print('사용자 ID: $_currentUserId');
-      print('서버에서 받은 세션 수: ${sessions.length}');
-      print('변환된 세션 수: ${_chatSessions.length}');
-      print('--- 각 세션 정보 ---');
-      for (int i = 0; i < _chatSessions.length; i++) {
-        final session = _chatSessions[i];
-        print('세션 ${i + 1}:');
-        print('  ID: ${session.id}');
-        print('  제목: ${session.displayTitle}');
-        print('  봇: ${session.bot?.name} (${session.bot?.id})');
-        print('  생성일: ${session.startTime}');
-        print('  수정일: ${session.updatedAt}');
-        print('  메시지 수: ${session.messages.length}');
-        print('  ---');
-      }
-      print('=== 디버깅 완료 ===');
+      // print('=== _loadUserSessions 디버깅 ===');
+      // print('사용자 ID: $_currentUserId');
+      // print('서버에서 받은 세션 수: ${sessions.length}');
+      // print('변환된 세션 수: ${_chatSessions.length}');
+      // print('--- 각 세션 정보 ---');
+      // for (int i = 0; i < _chatSessions.length; i++) {
+      //   final session = _chatSessions[i];
+      //   print('세션 ${i + 1}:');
+      //   print('  ID: ${session.id}');
+      //   print('  제목: ${session.displayTitle}');
+      //   print('  봇: ${session.bot?.name} (${session.bot?.id})');
+      //   print('  생성일: ${session.startTime}');
+      //   print('  수정일: ${session.updatedAt}');
+      //   print('  메시지 수: ${session.messages.length}');
+      //   print('  ---');
+      // }
+      // print('=== 디버깅 완료 ===');
 
       notifyListeners();
     } catch (e) {
@@ -145,7 +145,7 @@ class ChatProvider with ChangeNotifier {
   }
 
   /// 메시지를 전송하고 응답을 받는 메서드
-  Future<void> sendMessage(String content) async {
+  Future<void> sendMessage(String content, {bool? isWorkflow}) async {
     if (content.trim().isEmpty || _currentUserId == null) return;
 
     // 첫 메시지인 경우 새 세션 생성
@@ -159,6 +159,7 @@ class ChatProvider with ChangeNotifier {
         topic: 'None',
         time: DateTime.now(),
         startTime: DateTime.now(),
+        isWorkflow: isWorkflow ?? false, // 매개변수로 받은 값 사용
         messages: [],
         bot: _currentBot,
       );
@@ -188,19 +189,47 @@ class ChatProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // 백엔드 API에 메시지 전송
+      // 백엔드 API에 메시지 전송 - 현재 세션의 isWorkflow 값 사용
       final response = await _chatApiService.sendMessage(
         sessionId: _currentSession!.id == 0 ? null : _currentSession!.id,
         userInput: content,
         userId: _currentUserId!,
         characterId: ChatSession.getCharacterIdFromBotId(_currentBot.id),
-        isWorkflow: false,
+        isWorkflow: _currentSession!.isWorkflow, // 세션에 저장된 값 사용
       );
+      print("sendmessage - isWorkflow: ${response['is_workflow']}");
+      // 새 세션이 생성된 경우 세션 ID와 isWorkflow 업데이트
+      if (_currentSession!.id == 0 && response['session_id'] != null) {
+        final newSessionId = response['session_id'];
+        final newIsWorkflow = response['is_workflow'] ?? false;
+
+        // 현재 세션의 ID와 isWorkflow를 실제 값으로 업데이트
+        final updatedSessionWithId = _currentSession!.copyWith(
+          id: newSessionId,
+          isWorkflow: newIsWorkflow,
+          time: DateTime.now(),
+        );
+        _currentSession = updatedSessionWithId;
+        
+        // 세션 목록에서도 업데이트
+        _updateSession(updatedSessionWithId);
+      } else if (_currentSession!.id > 0) {
+        // 기존 세션의 경우 isWorkflow 값 업데이트
+        final newIsWorkflow = response['is_workflow'] ?? _currentSession!.isWorkflow;
+        if (newIsWorkflow != _currentSession!.isWorkflow) {
+          final updatedSessionWithWorkflow = _currentSession!.copyWith(
+            isWorkflow: newIsWorkflow,
+            time: DateTime.now(),
+          );
+          _currentSession = updatedSessionWithWorkflow;
+          _updateSession(updatedSessionWithWorkflow);
+        }
+      }
 
       // 봇 응답 메시지 추가
       final botMessage = ChatMessage(
         id: 0, // 임시 ID (백엔드에서 생성됨)
-        sessionId: _currentSession!.id == 0 ? 0 : _currentSession!.id,
+        sessionId: _currentSession!.id,
         message: response['response'],
         sender: 'model',
         order: _currentSession!.messages.length,
@@ -214,7 +243,7 @@ class ChatProvider with ChangeNotifier {
       _updateSession(updatedSessionWithResponse);
       _currentSession = updatedSessionWithResponse;
 
-      // 새 세션이 생성된 경우 세션 목록 새로고침
+      // 새 세션이 생성된 경우 세션 목록 새로고침 (백업용)
       if (_currentSession!.id == 0) {
         await _loadUserSessions();
       }
@@ -268,6 +297,7 @@ class ChatProvider with ChangeNotifier {
       topic: topic,
       time: DateTime.now(),
       startTime: DateTime.now(),
+      isWorkflow: false, // 초기값
       messages: [],
       bot: bot,
     );
@@ -276,5 +306,18 @@ class ChatProvider with ChangeNotifier {
 
     // 즉시 초기 메시지 전송
     await sendMessage(initialMessage);
+  }
+
+  /// 현재 세션의 isWorkflow 값을 변경하는 메서드
+  void setCurrentSessionWorkflow(bool isWorkflow) {
+    if (_currentSession != null) {
+      final updatedSession = _currentSession!.copyWith(
+        isWorkflow: isWorkflow,
+        time: DateTime.now(),
+      );
+      _currentSession = updatedSession;
+      _updateSession(updatedSession);
+      notifyListeners();
+    }
   }
 }

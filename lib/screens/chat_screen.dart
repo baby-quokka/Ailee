@@ -30,8 +30,11 @@ class _ChatScreenState extends State<ChatScreen> {
     FocusScope.of(context).unfocus();
   }
 
-  void _onPromptSelected(String prompt) {
-    _sendMessage(prompt);
+  void _sendMessageWithWorkflow(String text, bool isWorkflow) {
+    if (text.trim().isEmpty) return;
+    context.read<ChatProvider>().sendMessage(text, isWorkflow: isWorkflow);
+    _messageController.clear();
+    FocusScope.of(context).unfocus();
   }
 
   Widget _buildLoadingIndicator() {
@@ -154,7 +157,7 @@ class _ChatScreenState extends State<ChatScreen> {
             samplePrompts
                 .map(
                   (prompt) => ElevatedButton(
-                    onPressed: () => _onPromptSelected(prompt),
+                    onPressed: () => _sendMessageWithWorkflow(prompt, true),
                     child: Text(prompt),
                   ),
                 )
