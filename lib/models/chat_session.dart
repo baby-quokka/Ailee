@@ -9,6 +9,7 @@ class ChatSession {
   final String topic;
   final DateTime time;
   final DateTime startTime;
+  final bool isWorkflow; // 워크플로우 여부
 
   // UI를 위한 추가 필드들
   final List<ChatMessage> messages;
@@ -22,6 +23,7 @@ class ChatSession {
     required this.topic,
     required this.time,
     required this.startTime,
+    this.isWorkflow = false, // 기본값 false
     this.messages = const [],
     this.bot,
   });
@@ -39,6 +41,7 @@ class ChatSession {
           json['start_time'] != null
               ? DateTime.parse(json['start_time'])
               : DateTime.now(),
+      isWorkflow: json['is_workflow'] ?? false,
     );
   }
 
@@ -51,6 +54,7 @@ class ChatSession {
       'topic': topic,
       'time': time.toIso8601String(),
       'start_time': startTime.toIso8601String(),
+      'is_workflow': isWorkflow,
     };
   }
 
@@ -71,6 +75,7 @@ class ChatSession {
     String? topic,
     DateTime? time,
     DateTime? startTime,
+    bool? isWorkflow,
     List<ChatMessage>? messages,
     ChatBot? bot,
   }) {
@@ -82,6 +87,7 @@ class ChatSession {
       topic: topic ?? this.topic,
       time: time ?? this.time,
       startTime: startTime ?? this.startTime,
+      isWorkflow: isWorkflow ?? this.isWorkflow,
       messages: messages ?? this.messages,
       bot: bot ?? this.bot,
     );

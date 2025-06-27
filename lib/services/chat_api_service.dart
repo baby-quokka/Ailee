@@ -10,8 +10,14 @@ class ChatApiService {
   factory ChatApiService() => _instance;
   ChatApiService._internal();
 
-  // HTTP 클라이언트
-  final http.Client _client = http.Client();
+  // HTTP 클라이언트 - 연결 관리를 위해 수정
+  http.Client? _client;
+
+  // HTTP 클라이언트 초기화
+  http.Client get _getClient {
+    _client ??= http.Client();
+    return _client!;
+  }
 
   // 기본 헤더
   Map<String, String> get _headers => {...ApiConfig.defaultHeaders};
@@ -19,44 +25,163 @@ class ChatApiService {
   // 에러 처리
   void _handleError(http.Response response) {
     if (response.statusCode >= 400) {
-      final errorData = json.decode(response.body);
-      final message =
-          errorData['error'] ?? errorData['message'] ?? '알 수 없는 오류가 발생했습니다.';
-      throw ApiException(message, response.statusCode);
+      String errorMessage = '알 수 없는 오류가 발생했습니다.';
+      
+      try {
+        // JSON 응답인지 확인
+        if (response.headers['content-type']?.contains('application/json') == true) {
+          final errorData = json.decode(response.body);
+          errorMessage = errorData['error'] ?? errorData['message'] ?? errorMessage;
+        } else {
+          // HTML 응답인 경우 (서버 에러 페이지)
+          if (response.body.contains('<!DOCTYPE html>') || response.body.contains('<html>')) {
+            switch (response.statusCode) {
+              case 404:
+                errorMessage = '요청한 API 엔드포인트를 찾을 수 없습니다.';
+                break;
+              case 500:
+                errorMessage = '서버 내부 오류가 발생했습니다.';
+                break;
+              case 401:
+                errorMessage = '인증이 필요합니다. 로그인을 다시 시도해주세요.';
+                break;
+              case 403:
+                errorMessage = '접근 권한이 없습니다.';
+                break;
+              default:
+                errorMessage = '서버 오류가 발생했습니다. (${response.statusCode})';
+            }
+          } else {
+            errorMessage = '서버 응답을 처리할 수 없습니다. (${response.statusCode})';
+          }
+        }
+      } catch (e) {
+        // JSON 파싱 실패 시
+        if (response.body.contains('<!DOCTYPE html>') || response.body.contains('<html>')) {
+          errorMessage = '서버에서 HTML 페이지를 반환했습니다. (${response.statusCode})';
+        } else {
+          errorMessage = '응답을 처리할 수 없습니다. (${response.statusCode})';
+        }
+      }
+      
+      throw ApiException(errorMessage, response.statusCode);
     }
   }
 
-  // GET 요청 헬퍼
+  // GET 요청 헬퍼 (재시도 로직 포함)
   Future<T> _get<T>(String endpoint) async {
-    try {
-      final response = await _client
-          .get(Uri.parse('${ApiConfig.baseUrl}$endpoint'), headers: _headers)
-          .timeout(ApiConfig.timeout);
+    int retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        print('=== API 요청 디버깅 (GET) - 시도 ${retryCount + 1} ===');
+        print('URL: ${ApiConfig.baseUrl}$endpoint');
+        print('Headers: $_headers');
+        
+        final response = await _getClient
+            .get(Uri.parse('${ApiConfig.baseUrl}$endpoint'), headers: _headers)
+            .timeout(ApiConfig.timeout);
 
-      _handleError(response);
-      return json.decode(response.body) as T;
-    } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('네트워크 오류가 발생했습니다: $e', 0);
+        print('Response Status: ${response.statusCode}');
+        print('Response Headers: ${response.headers}');
+        print('Response Body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
+        print('=== 디버깅 완료 (GET) ===');
+
+        _handleError(response);
+        return json.decode(response.body) as T;
+      } catch (e) {
+        retryCount++;
+        print('GET 요청 실패 (시도 $retryCount/$maxRetries): $e');
+        
+        if (e.toString().contains('Connection closed') || 
+            e.toString().contains('SocketException') ||
+            e.toString().contains('TimeoutException')) {
+          
+          if (retryCount < maxRetries) {
+            print('연결 오류 발생, ${retryCount * 2}초 후 재시도...');
+            await Future.delayed(Duration(seconds: retryCount * 2));
+            
+            // 클라이언트 재생성
+            _client?.close();
+            _client = null;
+            continue;
+          }
+        }
+        
+        if (e is ApiException) rethrow;
+        throw ApiException('네트워크 오류가 발생했습니다: $e', 0);
+      }
     }
+    
+    throw ApiException('최대 재시도 횟수를 초과했습니다.', 0);
   }
 
-  // POST 요청 헬퍼
+  // POST 요청 헬퍼 (재시도 로직 포함)
   Future<T> _post<T>(String endpoint, Map<String, dynamic> data) async {
-    try {
-      final response = await _client
-          .post(
-            Uri.parse('${ApiConfig.baseUrl}$endpoint'),
-            headers: _headers,
-            body: json.encode(data),
-          )
-          .timeout(ApiConfig.timeout);
+    int retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        print('=== API 요청 디버깅 (POST) - 시도 ${retryCount + 1} ===');
+        print('URL: ${ApiConfig.baseUrl}$endpoint');
+        print('Headers: $_headers');
+        print('Data: $data');
+        
+        final response = await _getClient
+            .post(
+              Uri.parse('${ApiConfig.baseUrl}$endpoint'),
+              headers: _headers,
+              body: json.encode(data),
+            )
+            .timeout(ApiConfig.timeout);
 
-      _handleError(response);
-      return json.decode(response.body) as T;
+        print('Response Status: ${response.statusCode}');
+        print('Response Headers: ${response.headers}');
+        print('Response Body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
+        print('=== 디버깅 완료 ===');
+
+        _handleError(response);
+        return json.decode(response.body) as T;
+      } catch (e) {
+        retryCount++;
+        print('POST 요청 실패 (시도 $retryCount/$maxRetries): $e');
+        
+        if (e.toString().contains('Connection closed') || 
+            e.toString().contains('SocketException') ||
+            e.toString().contains('TimeoutException')) {
+          
+          if (retryCount < maxRetries) {
+            print('연결 오류 발생, ${retryCount * 2}초 후 재시도...');
+            await Future.delayed(Duration(seconds: retryCount * 2));
+            
+            // 클라이언트 재생성
+            _client?.close();
+            _client = null;
+            continue;
+          }
+        }
+        
+        if (e is ApiException) rethrow;
+        throw ApiException('네트워크 오류가 발생했습니다: $e', 0);
+      }
+    }
+    
+    throw ApiException('최대 재시도 횟수를 초과했습니다.', 0);
+  }
+
+  // 서버 연결 상태 확인
+  Future<bool> checkServerConnection() async {
+    try {
+      final response = await _getClient
+          .get(Uri.parse('${ApiConfig.baseUrl}/health/'), headers: _headers)
+          .timeout(const Duration(seconds: 5));
+      
+      return response.statusCode == 200;
     } catch (e) {
-      if (e is ApiException) rethrow;
-      throw ApiException('네트워크 오류가 발생했습니다: $e', 0);
+      print('서버 연결 확인 실패: $e');
+      return false;
     }
   }
 
@@ -84,6 +209,9 @@ class ChatApiService {
     required int characterId,
     bool isWorkflow = false,
   }) async {
+    if (userInput == 'start!') {
+      isWorkflow = true;
+    }
     final data = <String, dynamic>{
       'user_input': userInput,
       'user_id': userId,
@@ -103,13 +231,15 @@ class ChatApiService {
 
     return {
       'response': response['response'],
+      'session_id': response['session_id'],
+      'is_workflow': response['is_workflow'] ?? false,
       'is_fa': response['is_fa'] ?? false,
     };
   }
 
   // 연결 해제
   void dispose() {
-    _client.close();
+    _client?.close();
   }
 }
 
