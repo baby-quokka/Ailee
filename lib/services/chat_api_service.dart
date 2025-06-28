@@ -174,13 +174,21 @@ class ChatApiService {
   // 서버 연결 상태 확인
   Future<bool> checkServerConnection() async {
     try {
+      print('=== 서버 연결 확인 시작 ===');
+      print('연결 시도 URL: ${ApiConfig.baseUrl}/user/1');
+      
       final response = await _getClient
-          .get(Uri.parse('${ApiConfig.baseUrl}/health/'), headers: _headers)
-          .timeout(const Duration(seconds: 5));
+          .get(Uri.parse('${ApiConfig.baseUrl}/user/1'), headers: _headers)
+          .timeout(const Duration(seconds: 10)); // 타임아웃을 15초로 증가
+      
+      print('서버 응답 상태 코드: ${response.statusCode}');
+      print('서버 응답 내용: ${response.body}');
+      print('=== 서버 연결 확인 완료 ===');
       
       return response.statusCode == 200;
     } catch (e) {
       print('서버 연결 확인 실패: $e');
+      print('에러 타입: ${e.runtimeType}');
       return false;
     }
   }
