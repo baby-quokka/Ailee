@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
 import '../models/chat_session.dart';
@@ -211,12 +210,13 @@ class ChatProvider with ChangeNotifier {
           time: DateTime.now(),
         );
         _currentSession = updatedSessionWithId;
-        
+
         // 세션 목록에서도 업데이트
         _updateSession(updatedSessionWithId);
       } else if (_currentSession!.id > 0) {
         // 기존 세션의 경우 isWorkflow 값 업데이트
-        final newIsWorkflow = response['is_workflow'] ?? _currentSession!.isWorkflow;
+        final newIsWorkflow =
+            response['is_workflow'] ?? _currentSession!.isWorkflow;
         if (newIsWorkflow != _currentSession!.isWorkflow) {
           final updatedSessionWithWorkflow = _currentSession!.copyWith(
             isWorkflow: newIsWorkflow,
@@ -243,6 +243,9 @@ class ChatProvider with ChangeNotifier {
       );
       _updateSession(updatedSessionWithResponse);
       _currentSession = updatedSessionWithResponse;
+
+      // 실제 대화가 이루어진 후에만 세션을 맨 위로 이동
+      _moveSessionToTop(_currentSession!);
 
       // 새 세션이 생성된 경우 세션 목록 새로고침 (백업용)
       if (_currentSession!.id == 0) {
@@ -277,6 +280,15 @@ class ChatProvider with ChangeNotifier {
     );
     if (index != -1) {
       _chatSessions[index] = updatedSession;
+    }
+  }
+
+  /// 세션을 목록의 맨 앞으로 이동시키는 메서드
+  void _moveSessionToTop(ChatSession session) {
+    final index = _chatSessions.indexWhere((s) => s.id == session.id);
+    if (index != -1) {
+      _chatSessions.removeAt(index);
+      _chatSessions.insert(0, session);
     }
   }
 

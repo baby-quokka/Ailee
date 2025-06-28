@@ -46,10 +46,27 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>이 앱은 로컬 네트워크 기능을 사용하여 디버깅 서비스를 제공합니다.</string>
+	<string>이 앱은 외부 서버와 통신하기 위해 로컬 네트워크 접근 권한이 필요합니다.</string>
 	<key>NSBonjourServices</key>
 	<array>
-    	<string>_dartobservatory._tcp</string>
+		<string>_dartobservatory._tcp</string>
+		<string>_http._tcp</string>
+		<string>_https._tcp</string>
 	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>10.64.140.185</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>
