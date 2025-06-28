@@ -8,6 +8,8 @@ class ProfileInfoWidget extends StatelessWidget {
   final ValueChanged<int> onBotChanged;
   final VoidCallback onFollowersTap;
   final VoidCallback onFollowingTap;
+  final int followersCount;
+  final int followingCount;
 
   const ProfileInfoWidget({
     super.key,
@@ -16,6 +18,8 @@ class ProfileInfoWidget extends StatelessWidget {
     required this.onBotChanged,
     required this.onFollowersTap,
     required this.onFollowingTap,
+    this.followersCount = 0,
+    this.followingCount = 0,
   });
 
   @override
@@ -67,7 +71,7 @@ class ProfileInfoWidget extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      '2',
+                      followersCount.toString(),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -88,7 +92,7 @@ class ProfileInfoWidget extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      '3',
+                      followingCount.toString(),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -217,10 +221,10 @@ class ProfileInfoWidget extends StatelessWidget {
   String _getUserSummary(String botId) {
     const Map<String, String> userSummaries = {
       'ailee': 'Ailee가 본 사용자님은 긍정적이고, 새로운 것에 도전하는 성향이 강해요!',
-      'ben': 'Ben이 본 사용자님은 논리적이고, 기술에 관심이 많아요.',
-      'clara': 'Clara가 본 사용자님은 창의적이고, 아이디어가 넘쳐나요!',
-      'david': 'David가 본 사용자님은 전략적이고, 목표 지향적이에요.',
-      'emma': 'Emma가 본 사용자님은 학습에 열정적이고, 꾸준함이 돋보여요.',
+      'joon': 'Joon이 본 사용자님은 논리적이고, 기술에 관심이 많아요.',
+      'rin': 'Rin이 본 사용자님은 창의적이고, 아이디어가 넘쳐나요!',
+      'nick': 'Nick이 본 사용자님은 전략적이고, 목표 지향적이에요.',
+      'chad': 'Chad가 본 사용자님은 학습에 열정적이고, 꾸준함이 돋보여요.',
     };
     return userSummaries[botId] ?? '';
   }

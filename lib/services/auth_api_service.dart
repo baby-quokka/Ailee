@@ -203,16 +203,62 @@ class ApiService {
 
   // 팔로잉 목록 조회 (내가 팔로우하는 사람들)
   Future<List<User>> getFollowingList(int userId) async {
-    final response = await _get('${ApiConfig.userFollowing}$userId/following/');
-    final List<dynamic> followingList = response['following'] ?? [];
-    return followingList.map((json) => User.fromJson(json)).toList();
+    try {
+      final response = await _client
+          .get(Uri.parse('${ApiConfig.baseUrl}${ApiConfig.userFollowing}$userId/following/'), 
+               headers: _headers)
+          .timeout(ApiConfig.timeout);
+
+      _handleError(response);
+      final decodedResponse = json.decode(response.body);
+      
+      List<dynamic> followingList;
+      
+      if (decodedResponse is List) {
+        // 서버에서 배열을 직접 반환하는 경우
+        followingList = decodedResponse;
+      } else if (decodedResponse is Map) {
+        // 서버에서 Map을 반환하는 경우
+        followingList = decodedResponse['following'] ?? [];
+      } else {
+        return [];
+      }
+      
+      final users = followingList.map((json) => User.fromJson(json)).toList();
+      return users;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // 팔로워 목록 조회 (나를 팔로우하는 사람들)
   Future<List<User>> getFollowersList(int userId) async {
-    final response = await _get('${ApiConfig.userFollowers}$userId/followers/');
-    final List<dynamic> followersList = response['followers'] ?? [];
-    return followersList.map((json) => User.fromJson(json)).toList();
+    try {
+      final response = await _client
+          .get(Uri.parse('${ApiConfig.baseUrl}${ApiConfig.userFollowers}$userId/followers/'), 
+               headers: _headers)
+          .timeout(ApiConfig.timeout);
+
+      _handleError(response);
+      final decodedResponse = json.decode(response.body);
+      
+      List<dynamic> followersList;
+      
+      if (decodedResponse is List) {
+        // 서버에서 배열을 직접 반환하는 경우
+        followersList = decodedResponse;
+      } else if (decodedResponse is Map) {
+        // 서버에서 Map을 반환하는 경우
+        followersList = decodedResponse['followers'] ?? [];
+      } else {
+        return [];
+      }
+      
+      final users = followersList.map((json) => User.fromJson(json)).toList();
+      return users;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // 연결 해제

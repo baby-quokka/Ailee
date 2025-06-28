@@ -79,6 +79,10 @@ class AuthProvider extends ChangeNotifier {
         // 채팅 관련 데이터 로드
         await _loadChatData();
 
+        // 팔로잉/팔로워 목록 로드
+        await loadFollowingList();
+        await loadFollowersList();
+
         notifyListeners();
         return true;
       } else {
@@ -368,8 +372,17 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = User.fromJson(result['user'] ?? result);
         _error = null;
         
+        // ChatProvider에 사용자 ID 설정
+        if (_chatProvider != null) {
+          _chatProvider!.setCurrentUserId(_currentUser!.id);
+        }
+
         // 채팅 관련 데이터 로드
         await _loadChatData();
+        
+        // 팔로잉/팔로워 목록 로드
+        await loadFollowingList();
+        await loadFollowersList();
         
         notifyListeners();
         return true;

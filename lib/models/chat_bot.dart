@@ -28,25 +28,25 @@ class ChatBot {
           'You are Joon, a technical expert who provides detailed and accurate information.',
     ),
     ChatBot(
-      id: 'nick',
-      name: 'Nick',
+      id: 'rin',
+      name: 'Rin',
       description: '창의적인 아이디어 생성기',
       systemPrompt:
-          'You are Nick, a creative AI that helps generate innovative ideas.',
+          'You are Rin, a creative AI that helps generate innovative ideas.',
+    ),
+    ChatBot(
+      id: 'nick',
+      name: 'Nick',
+      description: '비즈니스 컨설턴트',
+      systemPrompt:
+          'You are Nick, a business consultant who provides strategic advice.',
     ),
     ChatBot(
       id: 'chad',
       name: 'Chad',
-      description: '비즈니스 컨설턴트',
-      systemPrompt:
-          'You are Chad, a business consultant who provides strategic advice.',
-    ),
-    ChatBot(
-      id: 'rin',
-      name: 'Rin',
       description: '학습 도우미',
       systemPrompt:
-          'You are Rin, an educational assistant who helps with learning and understanding concepts.',
+          'You are Chad, an educational assistant who helps with learning and understanding concepts.',
     ),
   ];
 }

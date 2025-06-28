@@ -100,11 +100,11 @@ class ChatSession {
         return 1;
       case 'joon':
         return 2;
-      case 'nick':
-        return 3;
-      case 'chad':
-        return 4;
       case 'rin':
+        return 3;
+      case 'nick':
+        return 4;
+      case 'chad':
         return 5;
       default:
         return 1;
@@ -119,11 +119,11 @@ class ChatSession {
       case 2:
         return 'joon';
       case 3:
-        return 'nick';
-      case 4:
-        return 'chad';
-      case 5:
         return 'rin';
+      case 4:
+        return 'nick';
+      case 5:
+        return 'chad';
       default:
         return 'ailee';
     }

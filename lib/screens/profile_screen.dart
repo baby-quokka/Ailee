@@ -37,6 +37,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _signupObscureConfirmPassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    // 앱 시작 시 팔로잉/팔로워 목록 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.isLoggedIn) {
+        authProvider.loadFollowersList();
+        authProvider.loadFollowingList();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
@@ -112,70 +125,221 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showFollowers() {
+    final authProvider = context.read<AuthProvider>();
+    authProvider.loadFollowersList();
+    
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => Scaffold(
-              appBar: AppBar(
-                title: Text('팔로워'),
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-              body: ListView(
-                children: [
-                  ListTile(
-                    leading: CircleAvatar(child: Icon(Icons.person)),
-                    title: Text('김민수'),
-                    subtitle: Text('@minsu_kim'),
-                  ),
-                  ListTile(
-                    leading: CircleAvatar(child: Icon(Icons.person)),
-                    title: Text('이지은'),
-                    subtitle: Text('@jieun_lee'),
-                  ),
-                ],
-              ),
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text('팔로워'),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
             ),
+          ),
+          body: Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              if (authProvider.isLoadingFollowers) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('팔로워 목록을 불러오는 중...'),
+                    ],
+                  ),
+                );
+              }
+              
+              final followers = authProvider.followersList;
+              
+              if (followers.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        '팔로워가 없습니다',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        '다른 사용자들이 당신을 팔로우하면\n여기에 표시됩니다.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              return ListView.builder(
+                itemCount: followers.length,
+                itemBuilder: (context, index) {
+                  final user = followers[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue[100],
+                      child: Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                        style: TextStyle(
+                          color: Colors.blue[700],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      user.name,
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text('@${user.email.split('@')[0]}'),
+                    trailing: OutlinedButton(
+                      onPressed: () {
+                        // 팔로우/언팔로우 기능 (나중에 구현)
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.blue),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text(
+                        '팔로우',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 
   void _showFollowing() {
+    final authProvider = context.read<AuthProvider>();
+    authProvider.loadFollowingList();
+    
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => Scaffold(
-              appBar: AppBar(
-                title: Text('팔로잉'),
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-              body: ListView(
-                children: [
-                  ListTile(
-                    leading: CircleAvatar(child: Icon(Icons.person)),
-                    title: Text('박서연'),
-                    subtitle: Text('@seoyeon_park'),
-                  ),
-                  ListTile(
-                    leading: CircleAvatar(child: Icon(Icons.person)),
-                    title: Text('최준호'),
-                    subtitle: Text('@junho_choi'),
-                  ),
-                  ListTile(
-                    leading: CircleAvatar(child: Icon(Icons.person)),
-                    title: Text('정다은'),
-                    subtitle: Text('@daeun_jung'),
-                  ),
-                ],
-              ),
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text('팔로잉'),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
             ),
+          ),
+          body: Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              if (authProvider.isLoadingFollowing) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('팔로잉 목록을 불러오는 중...'),
+                    ],
+                  ),
+                );
+              }
+              
+              final following = authProvider.followingList;
+              
+              if (following.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        '팔로잉이 없습니다',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        '다른 사용자들을 팔로우하면\n여기에 표시됩니다.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              return ListView.builder(
+                itemCount: following.length,
+                itemBuilder: (context, index) {
+                  final user = following[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.green[100],
+                      child: Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                        style: TextStyle(
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      user.name,
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text('@${user.email.split('@')[0]}'),
+                    trailing: OutlinedButton(
+                      onPressed: () {
+                        // 언팔로우 기능 (나중에 구현)
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.red),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text(
+                        '언팔로우',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -209,6 +373,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onBotChanged: (idx) => setState(() => selectedBotIndex = idx),
                   onFollowersTap: _showFollowers,
                   onFollowingTap: _showFollowing,
+                  followersCount: authProvider.followersList.length,
+                  followingCount: authProvider.followingList.length,
                 ),
               ),
               if (!isLoggedIn) ...[
