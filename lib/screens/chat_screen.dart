@@ -108,17 +108,23 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Container(color: Colors.grey[500]!, height: 0.5),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child:
-                hasStartedChat
-                    ? _buildChatList(messages)
-                    : _buildInitialCenterCharacter(bot),
-          ),
-          if (!hasStartedChat) _buildSamplePromptButtons(),
-          _buildInputField(),
-        ],
+      body: GestureDetector(
+        onTap: () {
+          // 화면을 터치하면 키보드가 내려감
+          FocusScope.of(context).unfocus();
+        },
+        child: Column(
+          children: [
+            Expanded(
+              child:
+                  hasStartedChat
+                      ? _buildChatList(messages)
+                      : _buildInitialCenterCharacter(bot),
+            ),
+            if (!hasStartedChat) _buildSamplePromptButtons(),
+            _buildInputField(),
+          ],
+        ),
       ),
     );
   }
@@ -187,6 +193,8 @@ class _ChatScreenState extends State<ChatScreen> {
               child: TextField(
                 controller: _messageController,
                 onSubmitted: _sendMessage,
+                maxLines: null,
+                textInputAction: TextInputAction.send,
                 style: const TextStyle(fontSize: 16),
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(
@@ -199,11 +207,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.send, color: Colors.black),
-              onPressed: () => _sendMessage(_messageController.text),
-              splashRadius: 24,
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue[100],
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_upward, color: Colors.black),
+                  onPressed: () => _sendMessage(_messageController.text),
+                  splashRadius: 24,
+                ),
+              ),
             ),
+            const SizedBox(width: 10),
           ],
         ),
       ),
@@ -213,78 +232,99 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildChatList(List<ChatMessage> messages) {
     final chatProvider = context.watch<ChatProvider>();
     final isLoading = chatProvider.isLoading;
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: messages.length + (isLoading ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (isLoading && index == messages.length) {
-          return _buildLoadingIndicator();
-        }
-        final msg = messages[index];
 
-        if (msg.isUser) {
-          // 사용자 메시지 - 기존 박스 스타일 유지
-          return Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[100],
-                borderRadius: BorderRadius.circular(12),
+    // ScrollController 추가
+    final ScrollController scrollController = ScrollController();
+
+    // 메시지가 추가되면 자동으로 최하단으로 스크롤
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (scrollController.hasClients) {
+        scrollController.animateTo(
+          scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
+    return Scrollbar(
+      controller: scrollController,
+      thickness: 4, // 스크롤바 두께
+      radius: const Radius.circular(2), // 스크롤바 모서리 둥글기
+      child: ListView.builder(
+        controller: scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        itemCount: messages.length + (isLoading ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (isLoading && index == messages.length) {
+            return _buildLoadingIndicator();
+          }
+          final msg = messages[index];
+
+          if (msg.isUser) {
+            // 사용자 메시지 - 기존 박스 스타일 유지
+            return Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  msg.message,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                    height: 1.4,
+                    // fontFamily: 'NanumGothicBold',
+                  ),
+                ),
               ),
-              child: Text(
-                msg.message,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                  height: 1.4,
-                  // fontFamily: 'NanumGothicBold',
-                ),
+            );
+          } else {
+            // AI 답변 - 봇 이미지와 텍스트로 표시
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // AI 봇 이미지
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue[100]!, Colors.blue[300]!],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.smart_toy,
+                      color: Colors.blue,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // AI 답변 텍스트
+                  Expanded(
+                    child: Text(
+                      msg.message,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        height: 1.4,
+                        // fontFamily: 'NanumGothicBold',
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          );
-        } else {
-          // AI 답변 - 봇 이미지와 텍스트로 표시
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // AI 봇 이미지
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue[100]!, Colors.blue[300]!],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.smart_toy,
-                    color: Colors.blue,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // AI 답변 텍스트
-                Expanded(
-                  child: Text(
-                    msg.message,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black87,
-                      height: 1.4,
-                      // fontFamily: 'NanumGothicBold',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-      },
+            );
+          }
+        },
+      ),
     );
   }
 

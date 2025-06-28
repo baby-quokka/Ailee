@@ -8,12 +8,12 @@ import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 서버 연결 상태 확인
   final chatApiService = ChatApiService();
   final isServerConnected = await chatApiService.checkServerConnection();
   print('서버 연결 상태: $isServerConnected');
-  
+
   await InternetAddress.lookup('localhost');
   runApp(const MyApp());
 }
