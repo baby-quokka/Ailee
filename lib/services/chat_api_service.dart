@@ -173,12 +173,6 @@ class ChatApiService {
 
   // 특정 세션의 메시지 조회
   Future<List<ChatMessage>> getSessionMessages(int sessionId) async {
-    print('=== getSessionMessages 디버깅 ===');
-    print('요청한 세션 ID: $sessionId');
-    print('ApiConfig.chatSession: ${ApiConfig.chatSession}');
-    print('전체 엔드포인트: ${ApiConfig.chatSession}$sessionId/');
-    print('전체 URL: ${ApiConfig.baseUrl}${ApiConfig.chatSession}$sessionId/');
-    
     final response = await _get<List<dynamic>>(
       '${ApiConfig.chatSession}$sessionId/',
     );
@@ -208,10 +202,21 @@ class ChatApiService {
       data['session_id'] = sessionId;
     }
 
+    print('=== sendMessage 요청 디버깅 ===');
+    print('요청 데이터: $data');
+    print('요청 URL: ${ApiConfig.baseUrl}${ApiConfig.chatSession}');
+
     final response = await _post<Map<String, dynamic>>(
       ApiConfig.chatSession,
       data,
     );
+
+    print('=== sendMessage 응답 디버깅 ===');
+    print('전체 응답: $response');
+    print('response 필드: ${response['response']}');
+    print('session_id 필드: ${response['session_id']}');
+    print('is_workflow 필드: ${response['is_workflow']}');
+    print('is_fa 필드: ${response['is_fa']}');
 
     return {
       'response': response['response'],
@@ -219,6 +224,14 @@ class ChatApiService {
       'is_workflow': response['is_workflow'] ?? false,
       'is_fa': response['is_fa'] ?? false,
     };
+  }
+
+  // 특정 세션 삭제
+  Future<void> deleteChatSession(int sessionId) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/chat/sessions/$sessionId/');
+    final response = await _getClient.delete(url, headers: _headers);
+    _handleError(response);
+    // 성공 시 아무것도 반환하지 않음
   }
 
   // 연결 해제

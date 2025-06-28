@@ -12,6 +12,9 @@ class ChatProvider with ChangeNotifier {
   ChatSession? _currentSession; // 현재 열린 채팅 세션
   bool _isLoading = false; // 메시지 전송 중 여부
   int? _currentUserId; // 현재 로그인한 사용자 ID
+  List<String>? _workflowResponse;
+  bool get isWorkflow => _currentSession?.isWorkflow ?? false;
+  List<String>? get workflowResponse => _workflowResponse;
 
   // Getter 메서드들
   List<ChatSession> get chatSessions => _chatSessions;
@@ -235,15 +238,19 @@ class ChatProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // 백엔드 API에 메시지 전송 - 현재 세션의 isWorkflow 값 사용
       final response = await _chatApiService.sendMessage(
         sessionId: _currentSession!.id == 0 ? null : _currentSession!.id,
         userInput: content,
         userId: _currentUserId!,
         characterId: ChatSession.getCharacterIdFromBotId(_currentBot.id),
-        isWorkflow: _currentSession!.isWorkflow, // 세션에 저장된 값 사용
+        isWorkflow: _currentSession!.isWorkflow,
       );
-      
+      // 워크플로우 응답 저장
+      if (response['is_workflow'] == true && response['response'] is List && response['response'].length == 5) {
+        _workflowResponse = List<String>.from(response['response']);
+      } else {
+        _workflowResponse = null;
+      }
       // 새 세션이 생성된 경우 세션 ID와 isWorkflow 업데이트
       if (_currentSession!.id == 0 && response['session_id'] != null) {
         final newSessionId = response['session_id'];
@@ -276,9 +283,9 @@ class ChatProvider with ChangeNotifier {
 
       // 봇 응답 메시지 추가
       final botMessage = ChatMessage(
-        id: 0, // 임시 ID (백엔드에서 생성됨)
+        id: 0,
         sessionId: _currentSession!.id,
-        message: response['response'],
+        message: response['response'][0],
         sender: 'model',
         order: _currentSession!.messages.length,
       );
@@ -374,6 +381,21 @@ class ChatProvider with ChangeNotifier {
       _currentSession = updatedSession;
       _updateSession(updatedSession);
       notifyListeners();
+    }
+  }
+
+  /// 특정 세션 삭제
+  Future<void> deleteSession(int sessionId) async {
+    try {
+      await _chatApiService.deleteChatSession(sessionId);
+      _chatSessions.removeWhere((session) => session.id == sessionId);
+      if (_currentSession?.id == sessionId) {
+        _currentSession = null;
+      }
+      notifyListeners();
+    } catch (e) {
+      print('세션 삭제 오류: $e');
+      rethrow;
     }
   }
 }

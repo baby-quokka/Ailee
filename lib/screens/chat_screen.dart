@@ -6,6 +6,196 @@ import '../providers/chat_provider.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
 
+class WorkflowScreen extends StatelessWidget {
+  final ChatBot bot;
+  final TextEditingController workflowInputController;
+  const WorkflowScreen({Key? key, required this.bot, required this.workflowInputController}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return _WorkflowScreenBody(bot: bot, workflowInputController: workflowInputController);
+  }
+}
+
+class _WorkflowScreenBody extends StatefulWidget {
+  final ChatBot bot;
+  final TextEditingController workflowInputController;
+  const _WorkflowScreenBody({required this.bot, required this.workflowInputController});
+
+  @override
+  State<_WorkflowScreenBody> createState() => _WorkflowScreenBodyState();
+}
+
+class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
+  bool _popped = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final chatProvider = context.watch<ChatProvider>();
+    if (!chatProvider.isWorkflow) {
+      // 워크플로우가 종료되면 자동 pop
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chatProvider = context.watch<ChatProvider>();
+    // isWorkflow가 false로 바뀌면 자동 pop (중복 pop 방지)
+    if (!chatProvider.isWorkflow && !_popped) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && Navigator.of(context).canPop()) {
+          _popped = true;
+          Navigator.of(context).pop();
+        }
+      });
+    }
+
+    final workflowResponse = chatProvider.workflowResponse;
+    final isLoading = chatProvider.isLoading;
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(widget.bot.name, style: TextStyle(fontWeight: FontWeight.w500)),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+      ),
+      body: _buildWorkflowUI(context, chatProvider, workflowResponse, isLoading),
+    );
+  }
+
+  Widget _buildWorkflowUI(BuildContext context, ChatProvider chatProvider, List<String>? response, bool isLoading) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 32, left: 16, right: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: isLoading
+                        ? Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3)))
+                        : Text(
+                            response != null ? response[0] : '',
+                            style: TextStyle(fontSize: 16, color: Colors.black),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          ...List.generate(4, (i) {
+            final text = response != null ? response[i+1] : '';
+            if (text == null || text.trim().isEmpty) return SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: ElevatedButton(
+                onPressed: isLoading ? null : () {
+                  chatProvider.sendMessage(text, isWorkflow: true);
+                  FocusScope.of(context).unfocus();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  elevation: 2,
+                  side: BorderSide(color: Colors.grey[300]!),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(32),
+                  ),
+                  minimumSize: Size(double.infinity, 56),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    text,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),
+                    overflow: TextOverflow.visible,
+                    maxLines: null,
+                  ),
+                ),
+              ),
+            );
+          }),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: widget.workflowInputController,
+                    decoration: InputDecoration(
+                      hintText: '직접 입력',
+                      border: OutlineInputBorder(),
+                    ),
+                    enabled: !isLoading,
+                    onSubmitted: (text) {
+                      if (text.trim().isNotEmpty && !isLoading) {
+                        chatProvider.sendMessage(text, isWorkflow: true);
+                        widget.workflowInputController.clear();
+                        FocusScope.of(context).unfocus();
+                      }
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.send),
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          final text = widget.workflowInputController.text;
+                          if (text.trim().isNotEmpty) {
+                            chatProvider.sendMessage(text, isWorkflow: true);
+                            widget.workflowInputController.clear();
+                            FocusScope.of(context).unfocus();
+                          }
+                        },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -15,11 +205,17 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _workflowInputController = TextEditingController();
   final List<String> samplePrompts = ['나의 강점이 뭘까?', '스트레스 해소법 추천해줘'];
+
+  // 워크플로우 임시 진입 상태
+  bool _forceWorkflow = false;
+  bool _workflowScreenPushed = false;
 
   @override
   void dispose() {
     _messageController.dispose();
+    _workflowInputController.dispose();
     super.dispose();
   }
 
@@ -32,7 +228,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessageWithWorkflow(String text, bool isWorkflow) {
     if (text.trim().isEmpty) return;
-    context.read<ChatProvider>().sendMessage(text, isWorkflow: isWorkflow);
+    setState(() {
+      _forceWorkflow = isWorkflow;
+    });
+    context.read<ChatProvider>().sendMessage(text, isWorkflow: isWorkflow).then((_) {
+      setState(() {
+        _forceWorkflow = false;
+      });
+    });
     _messageController.clear();
     FocusScope.of(context).unfocus();
   }
@@ -56,9 +259,32 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
+    final isWorkflow = chatProvider.isWorkflow;
+    final workflowResponse = chatProvider.workflowResponse;
     final messages = chatProvider.currentSession?.messages ?? [];
     final hasStartedChat = messages.isNotEmpty;
     final bot = chatProvider.currentBot;
+
+    // prompt 버튼을 누른 직후에는 무조건 워크플로우 UI 진입
+    final showWorkflow = _forceWorkflow || (isWorkflow && workflowResponse != null && workflowResponse.length == 5);
+
+    // 워크플로우 진입 시 새로운 스크린 push
+    if (showWorkflow && !_workflowScreenPushed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _workflowScreenPushed = true;
+        });
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => WorkflowScreen(bot: bot, workflowInputController: _workflowInputController),
+          ),
+        ).then((_) {
+          setState(() {
+            _workflowScreenPushed = false;
+          });
+        });
+      });
+    }
 
     return Scaffold(
       drawer: _buildDrawer(),
@@ -108,23 +334,29 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Container(color: Colors.grey[500]!, height: 0.5),
         ),
       ),
-      body: GestureDetector(
-        onTap: () {
-          // 화면을 터치하면 키보드가 내려감
-          FocusScope.of(context).unfocus();
-        },
-        child: Column(
-          children: [
-            Expanded(
-              child:
-                  hasStartedChat
+      body: Builder(
+        builder: (context) {
+          if (showWorkflow) {
+            // 워크플로우 스크린이 push된 상태에서는 아래 UI를 비워둠
+            return const SizedBox.shrink();
+          }
+          return GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+            },
+            child: Column(
+              children: [
+                Expanded(
+                  child: hasStartedChat
                       ? _buildChatList(messages)
                       : _buildInitialCenterCharacter(bot),
+                ),
+                if (!hasStartedChat) _buildSamplePromptButtons(),
+                _buildInputField(),
+              ],
             ),
-            if (!hasStartedChat) _buildSamplePromptButtons(),
-            _buildInputField(),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
