@@ -182,6 +182,7 @@ class ChatApiService {
   // 메시지 전송 및 챗봇 답변 받기
   Future<Map<String, dynamic>> sendMessage({
     int? sessionId,
+    int? workflowId,
     required String userInput,
     required int userId,
     required int characterId,
@@ -201,22 +202,14 @@ class ChatApiService {
     if (sessionId != null) {
       data['session_id'] = sessionId;
     }
-
-    print('=== sendMessage 요청 디버깅 ===');
-    print('요청 데이터: $data');
-    print('요청 URL: ${ApiConfig.baseUrl}${ApiConfig.chatSession}');
-
+    if (workflowId != null) {
+      data['workflow_id'] = workflowId;
+    }
+    
     final response = await _post<Map<String, dynamic>>(
       ApiConfig.chatSession,
       data,
     );
-
-    print('=== sendMessage 응답 디버깅 ===');
-    print('전체 응답: $response');
-    print('response 필드: ${response['response']}');
-    print('session_id 필드: ${response['session_id']}');
-    print('is_workflow 필드: ${response['is_workflow']}');
-    print('is_fa 필드: ${response['is_fa']}');
 
     return {
       'response': response['response'],
@@ -228,10 +221,14 @@ class ChatApiService {
 
   // 특정 세션 삭제
   Future<void> deleteChatSession(int sessionId) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/chat/sessions/$sessionId/');
-    final response = await _getClient.delete(url, headers: _headers);
-    _handleError(response);
-    // 성공 시 아무것도 반환하지 않음
+    final url = Uri.parse('${ApiConfig.baseUrl}/chat/sessions/$sessionId/');
+    try {
+      final response = await _getClient.delete(url, headers: _headers);
+      _handleError(response);
+    } catch (e) {
+      print('deleteChatSession 예외: $e');
+      rethrow;
+    }
   }
 
   // 연결 해제

@@ -648,70 +648,89 @@ class _ChatScreenState extends State<ChatScreen> {
                 horizontal: 12.0,
                 vertical: 6.0,
               ),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: isCurrentSession ? Colors.black : Colors.grey[300]!,
-                    width: isCurrentSession ? 1.0 : 0.5,
+              child: Dismissible(
+                key: ValueKey('session_${session.id}'),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.red[400],
+                    borderRadius: BorderRadius.circular(16),
                   ),
+                  child: const Icon(Icons.delete, color: Colors.white, size: 32),
                 ),
-                elevation: 0.5,
-                color: Colors.white,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    chatProvider.selectSession(session.id);
-                    Navigator.pop(context);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(14.0),
-                    child: Row(
-                      children: [
-                        // Icon(
-                        //   Icons.chat_bubble_outline_rounded,
-                        //   color: Colors.grey[600],
-                        // ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                session.displayTitle,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.black,
+                confirmDismiss: (direction) async {
+                  // 삭제 확인 없이 바로 삭제
+                  await chatProvider.deleteSession(session.id);
+                  return true;
+                },
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: isCurrentSession ? Colors.black : Colors.grey[300]!,
+                      width: isCurrentSession ? 1.0 : 0.5,
+                    ),
+                  ),
+                  elevation: 0.5,
+                  color: Colors.white,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      chatProvider.selectSession(session.id);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        // ... 기존 코드 ...
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  session.displayTitle.isNotEmpty ? session.displayTitle : 'No Title',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.black,
+                                  ),
                                 ),
-                              ),
-                              // if (session.messages.isNotEmpty)
-                              //   Padding(
-                              //     padding: const EdgeInsets.only(top: 2.0),
-                              //     child: Text(
-                              //       session.messages.last.message,
-                              //       maxLines: 1,
-                              //       overflow: TextOverflow.ellipsis,
-                              //       style: TextStyle(
-                              //         color: Colors.grey[700],
-                              //         fontSize: 13,
-                              //       ),
-                              //     ),
-                              //   ),
-                              // 시간 표시 로직 추가 필요
-                              // Padding(
-                              //   padding: const EdgeInsets.only(top: 4.0),
-                              //   child: Text(
-                              //     '1시간 전', // 시간 표시 함수로 교체 가능
-                              //     style: TextStyle(
-                              //       color: Colors.grey[500],
-                              //       fontSize: 12,
-                              //     ),
-                              //   ),
-                              // ),
-                            ],
+                                if (session.messages.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2.0),
+                                    child: Text(
+                                      session.messages.last.message,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    _formatTimeAgo(session.updatedAt),
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -722,4 +741,14 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
+
+  String _formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+    if (diff.inMinutes < 1) return '방금 전';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
+    if (diff.inHours < 24) return '${diff.inHours}시간 전';
+    return '${diff.inDays}일 전';
+  }
 }
+
