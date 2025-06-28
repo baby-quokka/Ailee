@@ -173,6 +173,12 @@ class ChatApiService {
 
   // 특정 세션의 메시지 조회
   Future<List<ChatMessage>> getSessionMessages(int sessionId) async {
+    print('=== getSessionMessages 디버깅 ===');
+    print('요청한 세션 ID: $sessionId');
+    print('ApiConfig.chatSession: ${ApiConfig.chatSession}');
+    print('전체 엔드포인트: ${ApiConfig.chatSession}$sessionId/');
+    print('전체 URL: ${ApiConfig.baseUrl}${ApiConfig.chatSession}$sessionId/');
+    
     final response = await _get<List<dynamic>>(
       '${ApiConfig.chatSession}$sessionId/',
     );
