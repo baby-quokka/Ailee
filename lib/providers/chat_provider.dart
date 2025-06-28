@@ -129,6 +129,11 @@ class ChatProvider with ChangeNotifier {
     }
   }
 
+  /// 사용자의 채팅 세션을 로드하는 public 메서드
+  Future<void> loadSessions() async {
+    await _loadUserSessions();
+  }
+
   /// 세션의 메시지를 로드하는 메서드
   Future<void> loadSessionMessages(int sessionId) async {
     print('=== loadSessionMessages 디버깅 시작 ===');

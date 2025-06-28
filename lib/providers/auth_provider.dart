@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/chat_provider.dart';
 import '../models/user.dart';
 import '../services/auth_api_service.dart';
@@ -16,6 +17,11 @@ class AuthProvider extends ChangeNotifier {
   List<User> _followersList = [];
   bool _isLoadingFollowing = false;
   bool _isLoadingFollowers = false;
+
+  // SharedPreferences 키
+  static const String _keyEmail = 'saved_email';
+  static const String _keyPassword = 'saved_password';
+  static const String _keyAutoLogin = 'auto_login_enabled';
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -41,22 +47,45 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // 로그인
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String email, String password, {bool rememberMe = false}) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final user = await _apiService.login(email, password);
-      _currentUser = user;
-      // TODO: SharedPreferences에 사용자 정보 저장
+      final result = await _apiService.login(email, password);
+      
+      // success 키가 있으면 그것을 사용하고, 없으면 사용자 정보가 있으면 성공으로 처리
+      final isSuccess = result['success'] == true || result['id'] != null;
+      
+      if (isSuccess) {
+        // user 키가 있으면 user 객체를 사용, 없으면 result 자체를 사용자 정보로 사용
+        final userData = result['user'] ?? result;
+        _currentUser = User.fromJson(userData);
+        
+        // 자동 로그인 설정
+        if (rememberMe) {
+          await setAutoLoginEnabled(true);
+          await saveLoginCredentials(email, password);
+        } else {
+          await setAutoLoginEnabled(false);
+          await clearSavedCredentials();
+        }
 
-      // ChatProvider에 사용자 ID 설정
-      if (_chatProvider != null) {
-        _chatProvider!.setCurrentUserId(user.id);
+        // ChatProvider에 사용자 ID 설정
+        if (_chatProvider != null) {
+          _chatProvider!.setCurrentUserId(_currentUser!.id);
+        }
+
+        // 채팅 관련 데이터 로드
+        await _loadChatData();
+
+        notifyListeners();
+        return true;
+      } else {
+        _error = result['message'] ?? '로그인에 실패했습니다.';
+        notifyListeners();
+        return false;
       }
-
-      notifyListeners();
-      return true;
     } on ApiException catch (e) {
       _error = e.message;
       notifyListeners();
@@ -120,7 +149,9 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       _currentUser = null;
-      // TODO: SharedPreferences에서 사용자 정보 삭제
+      
+      // 자동 로그인 정보 삭제
+      await clearSavedCredentials();
 
       // ChatProvider에서 사용자 ID 초기화
       if (_chatProvider != null) {
@@ -272,5 +303,98 @@ class AuthProvider extends ChangeNotifier {
     _followingList.clear();
     _followersList.clear();
     notifyListeners();
+  }
+
+  // 자동 로그인 관련 메서드
+  Future<bool> isAutoLoginEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyAutoLogin) ?? false;
+  }
+
+  Future<void> setAutoLoginEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAutoLogin, enabled);
+  }
+
+  Future<void> saveLoginCredentials(String email, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyEmail, email);
+    await prefs.setString(_keyPassword, password);
+  }
+
+  Future<Map<String, String>?> getSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString(_keyEmail);
+    final password = prefs.getString(_keyPassword);
+    
+    if (email != null && password != null) {
+      return {'email': email, 'password': password};
+    }
+    return null;
+  }
+
+  Future<void> clearSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyEmail);
+    await prefs.remove(_keyPassword);
+    await prefs.setBool(_keyAutoLogin, false);
+  }
+
+  // 자동 로그인 시도
+  Future<bool> tryAutoLogin() async {
+    try {
+      final isEnabled = await isAutoLoginEnabled();
+      if (!isEnabled) {
+        return false;
+      }
+
+      final credentials = await getSavedCredentials();
+      if (credentials == null) {
+        return false;
+      }
+
+      _isLoading = true;
+      notifyListeners();
+
+      final result = await _apiService.login(
+        credentials['email']!,
+        credentials['password']!,
+      );
+
+      // success 키가 있으면 그것을 사용하고, 없으면 사용자 정보가 있으면 성공으로 처리
+      final isSuccess = result['success'] == true || result['id'] != null;
+
+      if (isSuccess) {
+        _currentUser = User.fromJson(result['user'] ?? result);
+        _error = null;
+        
+        // 채팅 관련 데이터 로드
+        await _loadChatData();
+        
+        notifyListeners();
+        return true;
+      } else {
+        final errorMsg = result['message'] ?? '자동 로그인에 실패했습니다.';
+        _error = errorMsg;
+        await clearSavedCredentials(); // 실패 시 저장된 정보 삭제
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = '자동 로그인 중 오류가 발생했습니다: $e';
+      await clearSavedCredentials(); // 오류 시 저장된 정보 삭제
+      notifyListeners();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 채팅 데이터 로드
+  Future<void> _loadChatData() async {
+    if (_chatProvider != null) {
+      await _chatProvider!.loadSessions();
+    }
   }
 }

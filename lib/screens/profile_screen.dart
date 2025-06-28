@@ -25,6 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _loginEmailController = TextEditingController();
   final _loginPasswordController = TextEditingController();
   bool _loginObscurePassword = true;
+  bool _rememberMe = false; // 자동 로그인 체크박스 상태
 
   // 회원가입 폼 컨트롤러
   final _signupFormKey = GlobalKey<FormState>();
@@ -52,6 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final success = await authProvider.login(
         _loginEmailController.text.trim(),
         _loginPasswordController.text,
+        rememberMe: _rememberMe,
       );
       if (success && mounted) {
         Navigator.of(context).pushReplacementNamed('/main');
@@ -184,6 +186,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 _loginObscurePassword = !_loginObscurePassword,
                           ),
                       onLogin: () => _login(context),
+                      rememberMe: _rememberMe,
+                      onRememberMeChanged: (value) => setState(() => _rememberMe = value),
                       signupFormKey: _signupFormKey,
                       signupEmailController: _signupEmailController,
                       signupNameController: _signupNameController,

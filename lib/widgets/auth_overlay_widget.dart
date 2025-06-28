@@ -12,6 +12,8 @@ class AuthOverlayWidget extends StatelessWidget {
   final bool loginObscurePassword;
   final VoidCallback onToggleLoginObscure;
   final VoidCallback onLogin;
+  final bool rememberMe;
+  final ValueChanged<bool> onRememberMeChanged;
   // 회원가입
   final GlobalKey<FormState> signupFormKey;
   final TextEditingController signupEmailController;
@@ -34,6 +36,8 @@ class AuthOverlayWidget extends StatelessWidget {
     required this.loginObscurePassword,
     required this.onToggleLoginObscure,
     required this.onLogin,
+    required this.rememberMe,
+    required this.onRememberMeChanged,
     required this.signupFormKey,
     required this.signupEmailController,
     required this.signupNameController,
@@ -172,6 +176,24 @@ class AuthOverlayWidget extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 24),
+                    // 자동 로그인 체크박스
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: rememberMe,
+                          onChanged: (value) => onRememberMeChanged(value ?? false),
+                          activeColor: const Color(0xFF667eea),
+                        ),
+                        const Text(
+                          '자동 로그인',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF666666),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     if (authProvider.error != null)
                       Container(
                         padding: const EdgeInsets.all(12),
