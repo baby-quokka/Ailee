@@ -54,11 +54,12 @@ class ChatProvider with ChangeNotifier {
     final session = _chatSessions.firstWhere(
       (session) => session.id == sessionId,
     );
+    
     _currentSession = session;
     _currentBot = session.bot ?? _currentBot; // 세션의 챗봇으로 현재 챗봇 변경
     notifyListeners();
 
-    // 세션 선택 시 해당 세션의 메시지 로드
+    // 세션 선택 시 해당 세션의 메시지 로드 (메시지가 없을 때만)
     if (session.messages.isEmpty) {
       loadSessionMessages(sessionId);
     }
@@ -197,7 +198,7 @@ class ChatProvider with ChangeNotifier {
         characterId: ChatSession.getCharacterIdFromBotId(_currentBot.id),
         isWorkflow: _currentSession!.isWorkflow, // 세션에 저장된 값 사용
       );
-      print("sendmessage - isWorkflow: ${response['is_workflow']}");
+      
       // 새 세션이 생성된 경우 세션 ID와 isWorkflow 업데이트
       if (_currentSession!.id == 0 && response['session_id'] != null) {
         final newSessionId = response['session_id'];
@@ -247,10 +248,10 @@ class ChatProvider with ChangeNotifier {
       // 실제 대화가 이루어진 후에만 세션을 맨 위로 이동
       _moveSessionToTop(_currentSession!);
 
-      // 새 세션이 생성된 경우 세션 목록 새로고침 (백업용)
-      if (_currentSession!.id == 0) {
-        await _loadUserSessions();
-      }
+      // 새 세션이 생성된 경우 세션 목록 새로고침 제거 (중복 방지)
+      // if (_currentSession!.id == 0) {
+      //   await _loadUserSessions();
+      // }
     } catch (e) {
       // 에러 발생 시 에러 메시지 추가
       final errorMessage = ChatMessage(

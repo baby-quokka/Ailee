@@ -35,4 +35,21 @@ class ChatMessage {
 
   bool get isUser => sender == 'user';
   bool get isModel => sender == 'model';
+
+  /// 객체의 일부 속성만 변경하여 새로운 객체를 생성하는 메서드
+  ChatMessage copyWith({
+    int? id,
+    int? sessionId,
+    String? sender,
+    String? message,
+    int? order,
+  }) {
+    return ChatMessage(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      sender: sender ?? this.sender,
+      message: message ?? this.message,
+      order: order ?? this.order,
+    );
+  }
 }

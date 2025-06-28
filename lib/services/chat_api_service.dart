@@ -79,32 +79,19 @@ class ChatApiService {
 
     while (retryCount < maxRetries) {
       try {
-        print('=== API 요청 디버깅 (GET) - 시도 ${retryCount + 1} ===');
-        print('URL: ${ApiConfig.baseUrl}$endpoint');
-        print('Headers: $_headers');
-
         final response = await _getClient
             .get(Uri.parse('${ApiConfig.baseUrl}$endpoint'), headers: _headers)
             .timeout(ApiConfig.timeout);
-
-        print('Response Status: ${response.statusCode}');
-        print('Response Headers: ${response.headers}');
-        print(
-          'Response Body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...',
-        );
-        print('=== 디버깅 완료 (GET) ===');
 
         _handleError(response);
         return json.decode(response.body) as T;
       } catch (e) {
         retryCount++;
-        print('GET 요청 실패 (시도 $retryCount/$maxRetries): $e');
 
         if (e.toString().contains('Connection closed') ||
             e.toString().contains('SocketException') ||
             e.toString().contains('TimeoutException')) {
           if (retryCount < maxRetries) {
-            print('연결 오류 발생, ${retryCount * 2}초 후 재시도...');
             await Future.delayed(Duration(seconds: retryCount * 2));
 
             // 클라이언트 재생성
@@ -129,11 +116,6 @@ class ChatApiService {
 
     while (retryCount < maxRetries) {
       try {
-        print('=== API 요청 디버깅 (POST) - 시도 ${retryCount + 1} ===');
-        print('URL: ${ApiConfig.baseUrl}$endpoint');
-        print('Headers: $_headers');
-        print('Data: $data');
-
         final response = await _getClient
             .post(
               Uri.parse('${ApiConfig.baseUrl}$endpoint'),
@@ -142,24 +124,15 @@ class ChatApiService {
             )
             .timeout(ApiConfig.timeout);
 
-        print('Response Status: ${response.statusCode}');
-        print('Response Headers: ${response.headers}');
-        print(
-          'Response Body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...',
-        );
-        print('=== 디버깅 완료 ===');
-
         _handleError(response);
         return json.decode(response.body) as T;
       } catch (e) {
         retryCount++;
-        print('POST 요청 실패 (시도 $retryCount/$maxRetries): $e');
 
         if (e.toString().contains('Connection closed') ||
             e.toString().contains('SocketException') ||
             e.toString().contains('TimeoutException')) {
           if (retryCount < maxRetries) {
-            print('연결 오류 발생, ${retryCount * 2}초 후 재시도...');
             await Future.delayed(Duration(seconds: retryCount * 2));
 
             // 클라이언트 재생성
@@ -180,21 +153,12 @@ class ChatApiService {
   // 서버 연결 상태 확인
   Future<bool> checkServerConnection() async {
     try {
-      print('=== 서버 연결 확인 시작 ===');
-      print('연결 시도 URL: ${ApiConfig.baseUrl}/user/1');
-      
       final response = await _getClient
           .get(Uri.parse('${ApiConfig.baseUrl}/user/1'), headers: _headers)
-          .timeout(const Duration(seconds: 10)); // 타임아웃을 15초로 증가
-      
-      print('서버 응답 상태 코드: ${response.statusCode}');
-      print('서버 응답 내용: ${response.body}');
-      print('=== 서버 연결 확인 완료 ===');
+          .timeout(const Duration(seconds: 10));
       
       return response.statusCode == 200;
     } catch (e) {
-      print('서버 연결 확인 실패: $e');
-      print('에러 타입: ${e.runtimeType}');
       return false;
     }
   }
