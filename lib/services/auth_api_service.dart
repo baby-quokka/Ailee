@@ -17,10 +17,58 @@ class ApiService {
   // 에러 처리
   void _handleError(http.Response response) {
     if (response.statusCode >= 400) {
-      final errorData = json.decode(response.body);
-      final message =
-          errorData['error'] ?? errorData['message'] ?? '알 수 없는 오류가 발생했습니다.';
-      throw ApiException(message, response.statusCode);
+      String errorMessage = '알 수 없는 오류가 발생했습니다.';
+      
+      try {
+        // JSON 응답인지 확인
+        if (response.headers['content-type']?.contains('application/json') == true) {
+          final errorData = json.decode(response.body);
+          errorMessage = errorData['error'] ?? errorData['message'] ?? errorMessage;
+        } else {
+          // HTML 응답인 경우 (서버 에러 페이지)
+          if (response.body.contains('<!DOCTYPE html>') || response.body.contains('<html>')) {
+            // HTML에서 에러 메시지 추출 시도
+            if (response.body.contains('IntegrityError')) {
+              errorMessage = '이미 존재하는 이메일입니다.';
+            } else if (response.body.contains('ValidationError')) {
+              errorMessage = '입력 데이터가 올바르지 않습니다.';
+            } else {
+              switch (response.statusCode) {
+                case 400:
+                  errorMessage = '잘못된 요청입니다.';
+                  break;
+                case 401:
+                  errorMessage = '인증이 필요합니다.';
+                  break;
+                case 403:
+                  errorMessage = '접근 권한이 없습니다.';
+                  break;
+                case 404:
+                  errorMessage = '요청한 리소스를 찾을 수 없습니다.';
+                  break;
+                case 500:
+                  errorMessage = '서버 내부 오류가 발생했습니다.';
+                  break;
+                default:
+                  errorMessage = '서버 오류가 발생했습니다. (${response.statusCode})';
+              }
+            }
+          } else {
+            errorMessage = '서버 응답을 처리할 수 없습니다. (${response.statusCode})';
+          }
+        }
+      } catch (e) {
+        // JSON 파싱 실패 시
+        if (response.body.contains('IntegrityError')) {
+          errorMessage = '이미 존재하는 이메일입니다.';
+        } else if (response.body.contains('ValidationError')) {
+          errorMessage = '입력 데이터가 올바르지 않습니다.';
+        } else {
+          errorMessage = '서버 응답을 처리할 수 없습니다. (${response.statusCode})';
+        }
+      }
+      
+      throw ApiException(errorMessage, response.statusCode);
     }
   }
 
@@ -97,8 +145,17 @@ class ApiService {
     required int tF,
     required int pJ,
   }) async {
+    print('=== 회원가입 디버깅 시작 ===');
+    print('이메일: $email');
+    print('이름: $name');
+    print('메인 캐릭터: $mainCharacter');
+    print('국가: $country');
+    print('생년월일: $birthDate');
+    print('활성화 시간: $activationTime');
+    print('MBTI: I/E=$iE, N/S=$nS, T/F=$tF, P/J=$pJ');
+    
     final userData = {
-      'gmail': email,
+      'email': email,
       'password': password,
       'name': name,
       'main_character': mainCharacter,
@@ -111,10 +168,25 @@ class ApiService {
       'p_j': pJ,
     };
 
-    await _post(ApiConfig.userCreate, userData);
+    print('전송할 데이터: $userData');
+    print('API 엔드포인트: ${ApiConfig.userCreate}');
 
-    // 회원가입 성공 후 로그인하여 사용자 정보 반환
-    return await login(email, password);
+    try {
+      await _post(ApiConfig.userCreate, userData);
+      print('회원가입 API 호출 성공');
+      
+      // 회원가입 성공 후 로그인하여 사용자 정보 반환
+      print('로그인 시도 중...');
+      final user = await login(email, password);
+      print('로그인 성공 - 사용자 ID: ${user.id}');
+      return user;
+    } catch (e) {
+      print('회원가입 실패: $e');
+      print('에러 타입: ${e.runtimeType}');
+      rethrow;
+    } finally {
+      print('=== 회원가입 디버깅 완료 ===');
+    }
   }
 
   // 로그인
@@ -138,6 +210,28 @@ class ApiService {
   ) async {
     final response = await _put('${ApiConfig.userProfile}$userId/', updateData);
     return User.fromJson(response);
+  }
+
+  // 사용자 팔로우/언팔로우
+  Future<Map<String, dynamic>> followUser(int userId, int targetUserId) async {
+    final response = await _post('${ApiConfig.userFollow}$targetUserId/follow/', {
+      'user_id': userId,
+    });
+    return response;
+  }
+
+  // 팔로잉 목록 조회 (내가 팔로우하는 사람들)
+  Future<List<User>> getFollowingList(int userId) async {
+    final response = await _get('${ApiConfig.userFollowing}$userId/following/');
+    final List<dynamic> followingList = response['following'] ?? [];
+    return followingList.map((json) => User.fromJson(json)).toList();
+  }
+
+  // 팔로워 목록 조회 (나를 팔로우하는 사람들)
+  Future<List<User>> getFollowersList(int userId) async {
+    final response = await _get('${ApiConfig.userFollowers}$userId/followers/');
+    final List<dynamic> followersList = response['followers'] ?? [];
+    return followersList.map((json) => User.fromJson(json)).toList();
   }
 
   // 연결 해제

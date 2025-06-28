@@ -7,6 +7,11 @@ class ApiConfig {
   static const String userLogin = '/user/login/';
   static const String userProfile = '/user/'; // /user/{user_id}/
 
+  // 팔로잉/팔로워 API 엔드포인트
+  static const String userFollow = '/user/'; // /user/{user_id}/follow/
+  static const String userFollowing = '/user/'; // /user/{user_id}/following/
+  static const String userFollowers = '/user/'; // /user/{user_id}/followers/
+
   // 채팅 API 엔드포인트
   static const String chatSessions =
       '/chat/users/'; // /chat/users/{user_id}/sessions/

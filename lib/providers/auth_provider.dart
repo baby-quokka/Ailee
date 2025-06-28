@@ -11,10 +11,22 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // 팔로잉/팔로워 관련 상태
+  List<User> _followingList = [];
+  List<User> _followersList = [];
+  bool _isLoadingFollowing = false;
+  bool _isLoadingFollowers = false;
+
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _currentUser != null;
+
+  // 팔로잉/팔로워 getter
+  List<User> get followingList => _followingList;
+  List<User> get followersList => _followersList;
+  bool get isLoadingFollowing => _isLoadingFollowing;
+  bool get isLoadingFollowers => _isLoadingFollowers;
 
   // ChatProvider 설정 메서드
   void setChatProvider(ChatProvider chatProvider) {
@@ -115,6 +127,9 @@ class AuthProvider extends ChangeNotifier {
         _chatProvider!.setCurrentUserId(0); // 0은 유효하지 않은 ID로 처리
       }
 
+      // 팔로잉/팔로워 데이터 초기화
+      clearFollowingData();
+
       _clearError();
       notifyListeners();
     } catch (e) {
@@ -133,12 +148,8 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final updatedUser = await _apiService.updateProfile(
-        _currentUser!.id,
-        updateData,
-      );
+      final updatedUser = await _apiService.updateProfile(_currentUser!.id, updateData);
       _currentUser = updatedUser;
-      // TODO: SharedPreferences에 업데이트된 사용자 정보 저장
       notifyListeners();
       return true;
     } on ApiException catch (e) {
@@ -194,5 +205,72 @@ class AuthProvider extends ChangeNotifier {
 
   void _clearError() {
     _error = null;
+  }
+
+  // 사용자 팔로우/언팔로우
+  Future<bool> followUser(int targetUserId) async {
+    if (_currentUser == null) return false;
+
+    try {
+      final response = await _apiService.followUser(_currentUser!.id, targetUserId);
+      
+      // 팔로잉 목록 새로고침
+      await loadFollowingList();
+      
+      return response['success'] ?? false;
+    } on ApiException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = '팔로우 중 오류가 발생했습니다: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 팔로잉 목록 로드
+  Future<void> loadFollowingList() async {
+    if (_currentUser == null) return;
+
+    _isLoadingFollowing = true;
+    notifyListeners();
+
+    try {
+      _followingList = await _apiService.getFollowingList(_currentUser!.id);
+    } on ApiException catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = '팔로잉 목록 로드 중 오류가 발생했습니다: $e';
+    } finally {
+      _isLoadingFollowing = false;
+      notifyListeners();
+    }
+  }
+
+  // 팔로워 목록 로드
+  Future<void> loadFollowersList() async {
+    if (_currentUser == null) return;
+
+    _isLoadingFollowers = true;
+    notifyListeners();
+
+    try {
+      _followersList = await _apiService.getFollowersList(_currentUser!.id);
+    } on ApiException catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = '팔로워 목록 로드 중 오류가 발생했습니다: $e';
+    } finally {
+      _isLoadingFollowers = false;
+      notifyListeners();
+    }
+  }
+
+  // 팔로잉/팔로워 목록 초기화
+  void clearFollowingData() {
+    _followingList.clear();
+    _followersList.clear();
+    notifyListeners();
   }
 }
