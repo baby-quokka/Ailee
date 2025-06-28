@@ -75,6 +75,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _logout(BuildContext context) async {
+    final authProvider = context.read<AuthProvider>();
+    await authProvider.logout();
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed('/main');
+    }
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('로그아웃'),
+          content: const Text('정말 로그아웃하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _logout(context);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('로그아웃'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showFollowers() {
     Navigator.push(
       context,
@@ -152,7 +188,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final isLoggedIn = authProvider.isLoggedIn;
 
         return Scaffold(
-          appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
+          appBar: AppBar(
+            backgroundColor: Colors.white, 
+            elevation: 0,
+            actions: [
+              if (isLoggedIn)
+                IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.red),
+                  onPressed: () => _showLogoutDialog(context),
+                  tooltip: '로그아웃',
+                ),
+            ],
+          ),
           body: Stack(
             children: [
               SingleChildScrollView(

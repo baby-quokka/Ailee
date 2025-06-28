@@ -121,7 +121,7 @@ class ProfileInfoWidget extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: 24),
+        SizedBox(height: 16),
         // 파트너 영역
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
