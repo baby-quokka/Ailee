@@ -62,7 +62,17 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () async {
+            final chatProvider = context.read<ChatProvider>();
+            final sessionId = chatProvider.currentSession?.id;
+            if (sessionId != null) {
+              await chatProvider.deleteSession(sessionId);
+              await chatProvider.loadSessions();
+            }
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
         ),
         title: Text(widget.bot.name, style: TextStyle(fontWeight: FontWeight.w500)),
         centerTitle: true,
@@ -82,112 +92,131 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
   }
 
   Widget _buildWorkflowUI(BuildContext context, ChatProvider chatProvider, List<String>? response, bool isLoading) {
+    final cardDecoration = BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 8,
+          offset: Offset(0, 2),
+        ),
+      ],
+    );
+
     return SingleChildScrollView(
       padding: EdgeInsets.only(bottom: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 챗봇 말풍선
           Padding(
             padding: const EdgeInsets.only(top: 32, left: 16, right: 16),
             child: Row(
               children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[400],
-                    shape: BoxShape.circle,
-                  ),
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, size: 36, color: Colors.grey[400]),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    padding: const EdgeInsets.all(18),
+                    decoration: cardDecoration,
                     child: isLoading
-                        ? Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3)))
+                        ? Center(
+                            child: SizedBox(
+                              height: 28,
+                              child: SpinKitThreeBounce(
+                                color: Colors.grey,
+                                size: 18,
+                              ),
+                            ),
+                          )
                         : Text(
                             response != null ? response[0] : '',
-                            style: TextStyle(fontSize: 16, color: Colors.black),
+                            style: TextStyle(fontSize: 16, color: Colors.black, fontFamily: 'Pretendard'),
                           ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
+          // 선택지 카드
           ...List.generate(4, (i) {
             final text = response != null ? response[i+1] : '';
             if (text == null || text.trim().isEmpty) return SizedBox.shrink();
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: ElevatedButton(
-                onPressed: isLoading ? null : () {
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: isLoading ? null : () {
                   chatProvider.sendMessage(text, isWorkflow: true);
                   FocusScope.of(context).unfocus();
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  elevation: 2,
-                  side: BorderSide(color: Colors.grey[300]!),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  minimumSize: Size(double.infinity, 56),
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    text,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),
-                    overflow: TextOverflow.visible,
-                    maxLines: null,
+                child: Container(
+                  decoration: cardDecoration,
+                  padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF5A6CEA),
+                        fontFamily: 'Pretendard',
+                      ),
+                    ),
                   ),
                 ),
               ),
             );
           }),
+          // 입력 카드
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: widget.workflowInputController,
-                    decoration: InputDecoration(
-                      hintText: '직접 입력',
-                      border: OutlineInputBorder(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Container(
+              decoration: cardDecoration,
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: widget.workflowInputController,
+                      decoration: InputDecoration(
+                        hintText: '직접 입력',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(fontFamily: 'Pretendard', color: Color(0xFF5A6CEA)),
+                      ),
+                      enabled: !isLoading,
+                      onSubmitted: (text) {
+                        if (text.trim().isNotEmpty && !isLoading) {
+                          chatProvider.sendMessage(text, isWorkflow: true);
+                          widget.workflowInputController.clear();
+                          FocusScope.of(context).unfocus();
+                        }
+                      },
                     ),
-                    enabled: !isLoading,
-                    onSubmitted: (text) {
-                      if (text.trim().isNotEmpty && !isLoading) {
-                        chatProvider.sendMessage(text, isWorkflow: true);
-                        widget.workflowInputController.clear();
-                        FocusScope.of(context).unfocus();
-                      }
-                    },
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          final text = widget.workflowInputController.text;
-                          if (text.trim().isNotEmpty) {
-                            chatProvider.sendMessage(text, isWorkflow: true);
-                            widget.workflowInputController.clear();
-                            FocusScope.of(context).unfocus();
-                          }
-                        },
-                ),
-              ],
+                  IconButton(
+                    icon: Icon(Icons.send, color: Color(0xFF5A6CEA)),
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            final text = widget.workflowInputController.text;
+                            if (text.trim().isNotEmpty) {
+                              chatProvider.sendMessage(text, isWorkflow: true);
+                              widget.workflowInputController.clear();
+                              FocusScope.of(context).unfocus();
+                            }
+                          },
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -206,7 +235,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _workflowInputController = TextEditingController();
-  final List<String> samplePrompts = ['나의 강점이 뭘까?', '스트레스 해소법 추천해줘'];
+  final List<String> samplePrompts = ['나의 강점이 뭘까?', '스트레스 해소법 추천해줘', '점심 뭐 먹을까?'];
 
   // 워크플로우 임시 진입 상태
   bool _forceWorkflow = false;
@@ -389,17 +418,43 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildSamplePromptButtons() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Wrap(
-        spacing: 10,
-        children:
-            samplePrompts
-                .map(
-                  (prompt) => ElevatedButton(
-                    onPressed: () => _sendMessageWithWorkflow(prompt, true),
-                    child: Text(prompt),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: samplePrompts
+              .map(
+                (prompt) => Container(
+                  height: 50,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                )
-                .toList(),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => _sendMessageWithWorkflow(prompt, true),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            prompt,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                              fontFamily: 'Pretendard',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
       ),
     );
   }
