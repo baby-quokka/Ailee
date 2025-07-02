@@ -65,8 +65,14 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
           onPressed: () async {
             final chatProvider = context.read<ChatProvider>();
             final sessionId = chatProvider.currentSession?.id;
+            print('[DEBUG] 뒤로가기 클릭 - 현재 세션 ID: ' + (sessionId?.toString() ?? 'null'));
             if (sessionId != null) {
-              await chatProvider.deleteSession(sessionId);
+              try {
+                await chatProvider.deleteSession(sessionId);
+                print('[DEBUG] deleteSession 호출 완료 - 삭제된 세션 ID: $sessionId');
+              } catch (e) {
+                print('[DEBUG] deleteSession 에러: ' + e.toString());
+              }
               await chatProvider.loadSessions();
             }
             if (Navigator.of(context).canPop()) {

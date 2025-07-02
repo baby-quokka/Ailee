@@ -1,5 +1,5 @@
 import 'package:ailee/screens/chat_screen.dart';
-import 'package:ailee/screens/main_screen.dart';
+import 'package:ailee/screens/slab/main_screen.dart';
 import 'package:ailee/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
