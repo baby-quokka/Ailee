@@ -1,6 +1,8 @@
 import 'package:ailee/screens/home_screen.dart';
 import 'package:ailee/screens/slab/slab_detail_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'post_screen.dart';
 import 'dummy_post.dart';
 import 'create_post_screen.dart';
@@ -298,7 +300,24 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ? dummyPosts.where((p) => p['slab'] == '자유').toList()
             : dummyPosts;
     return Scaffold(
-      body: _buildPostList(posts),
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          if (notification.direction == ScrollDirection.idle) {
+            final homeState =
+                context.findAncestorStateOfType<HomeScreenState>();
+            if (homeState == null) return false;
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (_bottomNavOffset < 0.5) {
+                homeState.setBottomNavOffset(0.0);
+              } else {
+                homeState.setBottomNavOffset(1.0);
+              }
+            });
+          }
+          return false;
+        },
+        child: _buildPostList(posts),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

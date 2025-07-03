@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'post_screen.dart';
 import '../../screens/home_screen.dart';
 
@@ -121,208 +123,231 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
                           ],
                         ),
                       )
-                      : ListView.separated(
-                        controller: _scrollController,
-                        itemCount: posts.length,
-                        separatorBuilder:
-                            (context, index) =>
-                                Divider(height: 1, color: Colors.grey[200]),
-                        itemBuilder: (context, index) {
-                          final post = posts[index];
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                PageRouteBuilder(
-                                  pageBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                      ) => PostDetailScreen(post: post),
-                                  transitionsBuilder: (
-                                    context,
-                                    animation,
-                                    secondaryAnimation,
-                                    child,
-                                  ) {
-                                    const begin = Offset(1.0, 0.0); // 오른쪽에서 시작
-                                    const end = Offset.zero;
-                                    const curve = Curves.ease;
-                                    final tween = Tween(
-                                      begin: begin,
-                                      end: end,
-                                    ).chain(CurveTween(curve: curve));
-                                    return SlideTransition(
-                                      position: animation.drive(tween),
-                                      child: child,
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 20,
-                                horizontal: 16,
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor: Colors.grey[200],
-                                    child: Icon(
-                                      Icons.person,
-                                      color: Colors.grey[500],
-                                    ),
+                      : NotificationListener<UserScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification.direction == ScrollDirection.idle) {
+                            final homeState =
+                                context
+                                    .findAncestorStateOfType<HomeScreenState>();
+                            if (homeState == null) return false;
+                            SchedulerBinding.instance.addPostFrameCallback((_) {
+                              if (_bottomNavOffset < 0.5) {
+                                homeState.setBottomNavOffset(0.0);
+                              } else {
+                                homeState.setBottomNavOffset(1.0);
+                              }
+                            });
+                          }
+                          return false;
+                        },
+                        child: ListView.separated(
+                          controller: _scrollController,
+                          itemCount: posts.length,
+                          separatorBuilder:
+                              (context, index) =>
+                                  Divider(height: 1, color: Colors.grey[200]),
+                          itemBuilder: (context, index) {
+                            final post = posts[index];
+                            return InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                        ) => PostDetailScreen(post: post),
+                                    transitionsBuilder: (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      const begin = Offset(
+                                        1.0,
+                                        0.0,
+                                      ); // 오른쪽에서 시작
+                                      const end = Offset.zero;
+                                      const curve = Curves.ease;
+                                      final tween = Tween(
+                                        begin: begin,
+                                        end: end,
+                                      ).chain(CurveTween(curve: curve));
+                                      return SlideTransition(
+                                        position: animation.drive(tween),
+                                        child: child,
+                                      );
+                                    },
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              post['username'],
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Text(
-                                              post['time'],
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                            const Spacer(),
-                                            Icon(
-                                              Icons.more_horiz,
-                                              size: 18,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              post['content'],
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                height: 1.6,
-                                              ),
-                                            ),
-                                            if (post['image'] != null) ...[
-                                              const SizedBox(height: 10),
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                child: Image.network(
-                                                  post['image'],
-                                                  height: 180,
-                                                  width: double.infinity,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder:
-                                                      (
-                                                        context,
-                                                        error,
-                                                        stackTrace,
-                                                      ) => Container(
-                                                        height: 180,
-                                                        color: Colors.grey[200],
-                                                        child: const Center(
-                                                          child: Icon(
-                                                            Icons.broken_image,
-                                                          ),
-                                                        ),
-                                                      ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 20,
+                                  horizontal: 16,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 20,
+                                      backgroundColor: Colors.grey[200],
+                                      child: Icon(
+                                        Icons.person,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                post['username'],
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
                                                 ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                post['time'],
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              Icon(
+                                                Icons.more_horiz,
+                                                size: 18,
+                                                color: Colors.grey[600],
                                               ),
                                             ],
-                                            const SizedBox(height: 14),
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.favorite_border,
-                                                      size: 18,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      '${post['likes']}',
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                                  ],
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                post['content'],
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  height: 1.6,
                                                 ),
-                                                Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons
-                                                          .mode_comment_outlined,
-                                                      size: 18,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      '${post['comments']}',
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.share_outlined,
-                                                      size: 18,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      '${post['shares']}',
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                Icon(
-                                                  Icons.repeat_rounded,
-                                                  size: 18,
-                                                  color: Colors.grey[600],
+                                              ),
+                                              if (post['image'] != null) ...[
+                                                const SizedBox(height: 10),
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  child: Image.network(
+                                                    post['image'],
+                                                    height: 180,
+                                                    width: double.infinity,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) => Container(
+                                                          height: 180,
+                                                          color:
+                                                              Colors.grey[200],
+                                                          child: const Center(
+                                                            child: Icon(
+                                                              Icons
+                                                                  .broken_image,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                  ),
                                                 ),
                                               ],
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                              const SizedBox(height: 14),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.favorite_border,
+                                                        size: 18,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${post['likes']}',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .mode_comment_outlined,
+                                                        size: 18,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${post['comments']}',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.share_outlined,
+                                                        size: 18,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${post['shares']}',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Icon(
+                                                    Icons.repeat_rounded,
+                                                    size: 18,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
             ),
           ],

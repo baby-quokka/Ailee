@@ -6,7 +6,7 @@ final List<Map<String, dynamic>> dummyPosts = [
     'image':
         'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
     'time': '방금',
-    'slab': '자유',
+    'slab': '연애',
     'likes': 12,
     'comments': 3,
     'shares': 1,
@@ -18,7 +18,7 @@ final List<Map<String, dynamic>> dummyPosts = [
     'image':
         'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80',
     'time': '10분 전',
-    'slab': '진로',
+    'slab': '연애',
     'likes': 5,
     'comments': 2,
     'shares': 0,
@@ -29,7 +29,7 @@ final List<Map<String, dynamic>> dummyPosts = [
     'image':
         'https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=400&q=80',
     'time': '30분 전',
-    'slab': '학업',
+    'slab': '연애',
     'likes': 8,
     'comments': 4,
     'shares': 0,
