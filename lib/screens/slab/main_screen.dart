@@ -60,6 +60,13 @@ class _MainTabViewState extends State<_MainTabView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: Builder(
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+        ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -75,6 +82,17 @@ class _MainTabViewState extends State<_MainTabView> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(color: Colors.grey[500]!, height: 0.5),
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue[100]),
+              child: const Text('메뉴', style: TextStyle(fontSize: 24)),
+            ),
+          ],
         ),
       ),
       body: PageView(

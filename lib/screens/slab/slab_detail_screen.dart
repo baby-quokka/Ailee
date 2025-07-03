@@ -20,18 +20,42 @@ class SlabDetailScreen extends StatefulWidget {
 
 class _SlabDetailScreenState extends State<SlabDetailScreen> {
   final TextEditingController _postController = TextEditingController();
+  late final ScrollController _scrollController;
+  double _lastOffset = 0;
+  double _bottomNavOffset = 1.0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final homeState = context.findAncestorStateOfType<HomeScreenState>();
       homeState?.setBottomNavOffset(1.0, immediate: true);
     });
   }
 
+  void _onScroll() {
+    final offset = _scrollController.offset;
+    final homeState = context.findAncestorStateOfType<HomeScreenState>();
+    if (homeState == null) return;
+    double delta = offset - _lastOffset;
+    _bottomNavOffset -= delta / 80.0; // 80px 스크롤에 완전히 사라지도록
+    _bottomNavOffset = _bottomNavOffset.clamp(0.0, 1.0);
+    homeState.setBottomNavOffset(_bottomNavOffset);
+    _lastOffset = offset;
+  }
+
+  void _handleBack() {
+    final homeState = context.findAncestorStateOfType<HomeScreenState>();
+    homeState?.setBottomNavOffset(1.0, immediate: true);
+    widget.onBack();
+  }
+
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _postController.dispose();
     super.dispose();
   }
@@ -42,7 +66,7 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
         widget.allPosts.where((p) => p['slab'] == widget.slabName).toList();
     return WillPopScope(
       onWillPop: () async {
-        widget.onBack();
+        _handleBack();
         return false; // 기본 뒤로가기 동작을 막고 onBack 콜백만 실행
       },
       child: Scaffold(
@@ -53,7 +77,7 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: widget.onBack,
+            onPressed: _handleBack,
           ),
           // TODO: 나중에 슬랩 구독 버튼 추가 (구독 되어있으면 체크표시)
           actions: [IconButton(icon: const Icon(Icons.add), onPressed: () {})],
@@ -98,9 +122,11 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
                         ),
                       )
                       : ListView.separated(
+                        controller: _scrollController,
                         itemCount: posts.length,
                         separatorBuilder:
-                            (context, index) => const Divider(height: 1),
+                            (context, index) =>
+                                Divider(height: 1, color: Colors.grey[200]),
                         itemBuilder: (context, index) {
                           final post = posts[index];
                           return InkWell(

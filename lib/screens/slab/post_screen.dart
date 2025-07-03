@@ -1,11 +1,32 @@
 import 'package:flutter/material.dart';
+import '../../screens/home_screen.dart';
 
-class PostDetailScreen extends StatelessWidget {
+class PostDetailScreen extends StatefulWidget {
   final Map<String, dynamic> post;
   const PostDetailScreen({super.key, required this.post});
 
   @override
+  State<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends State<PostDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeState = context.findAncestorStateOfType<HomeScreenState>();
+      homeState?.setBottomNavOffset(0.0, immediate: true);
+    });
+  }
+
+  void _showBottomNavBar() {
+    final homeState = context.findAncestorStateOfType<HomeScreenState>();
+    homeState?.setBottomNavOffset(1.0, immediate: true);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final post = widget.post;
     final List<Map<String, String>> dummyComments = [
       {'user': 'kevin0918k', 'content': '화이팅!!', 'time': '7시간 전'},
       {'user': 'mingyun7383', 'content': '힘내요', 'time': '13시간 전'},
@@ -22,7 +43,10 @@ class PostDetailScreen extends StatelessWidget {
         elevation: 1,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            _showBottomNavBar();
+            Navigator.pop(context);
+          },
         ),
         actions: [
           IconButton(

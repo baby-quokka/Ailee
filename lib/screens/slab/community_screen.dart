@@ -3,6 +3,7 @@ import 'package:ailee/screens/slab/slab_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'post_screen.dart';
 import 'dummy_post.dart';
+import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   final bool showSubscribeLabel;
@@ -54,6 +55,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
             final post = posts[index];
             return InkWell(
               onTap: () {
+                final homeState =
+                    context.findAncestorStateOfType<HomeScreenState>();
+                homeState?.setBottomNavOffset(0.0, immediate: true);
                 Navigator.push(
                   context,
                   PageRouteBuilder(
@@ -209,8 +213,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                               ],
                               const SizedBox(height: 14),
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
@@ -229,6 +232,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(width: 10),
                                   Row(
                                     children: [
                                       Icon(
@@ -246,6 +250,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(width: 10),
                                   Row(
                                     children: [
                                       Icon(
@@ -263,6 +268,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(width: 10),
                                   Icon(
                                     Icons.repeat_rounded,
                                     size: 18,
@@ -291,6 +297,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
         widget.showSubscribeLabel
             ? dummyPosts.where((p) => p['slab'] == '자유').toList()
             : dummyPosts;
-    return _buildPostList(posts);
+    return Scaffold(
+      body: _buildPostList(posts),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => CreatePostScreen()),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
   }
 }
