@@ -5,6 +5,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../providers/chat_provider.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
+import '../providers/auth_provider.dart';
 
 class WorkflowScreen extends StatelessWidget {
   final ChatBot bot;
@@ -241,7 +242,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _workflowInputController = TextEditingController();
-  final List<String> samplePrompts = ['나의 강점이 뭘까?', '스트레스 해소법 추천해줘', '점심 뭐 먹을까?'];
+  final List<String> samplePrompts = ['감정 조절 및 정서적 문제 해결', '의사결정 및 선택', '대인관계 및 커뮤니케이션', '자기 인식 및 정체성', '동기부여 및 습관/행동 변화, 생산성 및 시간관리', '학습/공부 전략 및 개념 이해'];
 
   // 워크플로우 임시 진입 상태
   bool _forceWorkflow = false;
@@ -386,7 +387,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       ? _buildChatList(messages)
                       : _buildInitialCenterCharacter(bot),
                 ),
-                if (!hasStartedChat) _buildSamplePromptButtons(),
+                if (!hasStartedChat) ...[
+                  _buildInitialGreeting(bot),
+                  _buildSamplePromptButtons(),
+                ],
                 _buildInputField(),
               ],
             ),
@@ -421,45 +425,98 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildInitialGreeting(ChatBot bot) {
+    final userName = Provider.of<AuthProvider>(context, listen: false).currentUser?.name ?? '';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '안녕하세요, $userName님!',
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.w800,
+                color: Colors.black87,
+                fontFamily: 'Pretendard',
+              ),
+              textAlign: TextAlign.left,
+            ),
+            Text(
+              '${bot.name}와 고민을 나눠봐요',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+                fontFamily: 'Pretendard',
+              ),
+              textAlign: TextAlign.left,
+            ),
+          ]
+        ) 
+      ),
+    );
+  }
+
   Widget _buildSamplePromptButtons() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: samplePrompts
-              .map(
-                (prompt) => Container(
-                  height: 50,
-                  margin: const EdgeInsets.only(right: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(10),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 80,
+        child: FloatingButton(
+          onTap: () => _sendMessageWithWorkflow('고민 상담하기', true),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _sendMessageWithWorkflow('고민 상담하기', true),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFFe0c3fc),
+                      Color(0xFF8ec5fc),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () => _sendMessageWithWorkflow(prompt, true),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            prompt,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black,
-                              fontFamily: 'Pretendard',
-                            ),
-                          ),
-                        ],
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/emoji/hand_with_fingers_splayed_3d_default.png',
+                      width: 36,
+                      height: 36,
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      '지금 무슨 고민 있어요?',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Pretendard',
+                        color: Colors.black,
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              )
-              .toList(),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -810,6 +867,53 @@ class _ChatScreenState extends State<ChatScreen> {
     if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
     if (diff.inHours < 24) return '${diff.inHours}시간 전';
     return '${diff.inDays}일 전';
+  }
+}
+
+class FloatingButton extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  const FloatingButton({super.key, required this.child, required this.onTap});
+
+  @override
+  State<FloatingButton> createState() => _FloatingButtonState();
+}
+
+class _FloatingButtonState extends State<FloatingButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 5, end: -5).chain(CurveTween(curve: Curves.easeInOut)).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _animation.value),
+          child: child,
+        );
+      },
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: widget.child,
+      ),
+    );
   }
 }
 
