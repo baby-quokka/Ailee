@@ -459,27 +459,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildInitialCenterCharacter(ChatBot bot) {
-    return Center(
-      child: Container(
-        height: 120,
-        width: 120,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue[100]!, Colors.blue[300]!],
-          ),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Center(
-          child: Text(
-            bot.name,
-            style: const TextStyle(
-              fontSize: 24,
-              color: Colors.blue,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Center(
+          child: Image.asset(
+            'assets/emoji/man_tipping_hand_3d_light.png',
+            width: 200,
+            height: 200,
+            fit: BoxFit.contain,
+          ),),
+      ],
     );
   }
 
@@ -608,7 +598,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     vertical: 14,
                     horizontal: 18,
                   ),
-                  hintText: "Type your message...",
+                  hintText: "Ask whatever you want",
                   border: InputBorder.none,
                   hintStyle: TextStyle(color: Colors.grey[500]),
                 ),
@@ -619,11 +609,11 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 40,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.blue[100],
+                  color: Colors.black,
                   borderRadius: BorderRadius.circular(25),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_upward, color: Colors.black),
+                  icon: const Icon(Icons.arrow_forward, color: Colors.white),
                   onPressed: () => _sendMessage(_messageController.text),
                   splashRadius: 24,
                 ),
