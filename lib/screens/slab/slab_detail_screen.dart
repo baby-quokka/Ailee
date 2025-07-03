@@ -40,10 +40,17 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
           title: Text(widget.slabName),
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
-          elevation: 1,
+          elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: widget.onBack,
+          ),
+          // TODO: 나중에 슬랩 구독 버튼 추가 (구독 되어있으면 체크표시)
+          actions: [IconButton(icon: const Icon(Icons.add), onPressed: () {})],
+          surfaceTintColor: Colors.white, // 앱바가 스크롤 시에도 흰색 유지
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: Colors.grey[500]!, height: 0.5),
           ),
         ),
         body: Column(
@@ -86,24 +93,7 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
                             (context, index) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final post = posts[index];
-                          return ListTile(
-                            leading: const CircleAvatar(
-                              child: Icon(Icons.person),
-                            ),
-                            title: Text(
-                              post['username'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(post['content']),
-                            trailing: Text(
-                              post['time'],
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
+                          return InkWell(
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -112,6 +102,166 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
                                 ),
                               );
                             },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 20,
+                                horizontal: 16,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: Colors.grey[200],
+                                    child: Icon(
+                                      Icons.person,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              post['username'],
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              post['time'],
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            Icon(
+                                              Icons.more_horiz,
+                                              size: 18,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              post['content'],
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                height: 1.6,
+                                              ),
+                                            ),
+                                            if (post['image'] != null) ...[
+                                              const SizedBox(height: 10),
+                                              ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: Image.network(
+                                                  post['image'],
+                                                  height: 180,
+                                                  width: double.infinity,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) => Container(
+                                                        height: 180,
+                                                        color: Colors.grey[200],
+                                                        child: const Center(
+                                                          child: Icon(
+                                                            Icons.broken_image,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                ),
+                                              ),
+                                            ],
+                                            const SizedBox(height: 14),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.favorite_border,
+                                                      size: 18,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      '${post['likes']}',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .mode_comment_outlined,
+                                                      size: 18,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      '${post['comments']}',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.share_outlined,
+                                                      size: 18,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      '${post['shares']}',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Icon(
+                                                  Icons.repeat_rounded,
+                                                  size: 18,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           );
                         },
                       ),
