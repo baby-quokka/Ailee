@@ -465,7 +465,8 @@ class _ChatScreenState extends State<ChatScreen> {
             width: 200,
             height: 200,
             fit: BoxFit.contain,
-          ),),
+          ),
+        ),
       ],
     );
   }
