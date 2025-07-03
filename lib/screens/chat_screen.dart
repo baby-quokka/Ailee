@@ -6,6 +6,7 @@ import '../providers/chat_provider.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
 import '../providers/auth_provider.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class WorkflowScreen extends StatelessWidget {
   final ChatBot bot;
@@ -416,16 +417,12 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Symbols.note_stack_add),
             onPressed: () {
               chatProvider.createNewSession();
             },
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey[500]!, height: 0.5),
-        ),
       ),
       body: Builder(
         builder: (context) {
@@ -478,7 +475,7 @@ class _ChatScreenState extends State<ChatScreen> {
         Provider.of<AuthProvider>(context, listen: false).currentUser?.name ??
         '';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Column(
@@ -487,7 +484,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               '안녕하세요, $userName님!',
               style: TextStyle(
-                fontSize: 25,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: Colors.black87,
                 fontFamily: 'Pretendard',
@@ -497,7 +494,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               '${bot.name}와 고민을 나눠봐요',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.grey[600],
                 fontFamily: 'Pretendard',
