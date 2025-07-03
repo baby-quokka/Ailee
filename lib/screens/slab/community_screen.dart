@@ -19,6 +19,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   late final ScrollController _scrollController;
   double _lastOffset = 0;
   double _bottomNavOffset = 1.0;
+  bool _showFab = true;
 
   @override
   void initState() {
@@ -35,6 +36,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
     _bottomNavOffset -= delta / 80.0; // 80px 스크롤에 완전히 사라지도록
     _bottomNavOffset = _bottomNavOffset.clamp(0.0, 1.0);
     homeState.setBottomNavOffset(_bottomNavOffset);
+
+    // FAB는 네비게이션바가 완전히 사라질 때만 사라지게, 올라올 때는 바로 나타나게
+    if (_bottomNavOffset == 0.0 && _showFab) {
+      setState(() {
+        _showFab = false;
+      });
+    } else if (_bottomNavOffset > 0.0 && !_showFab) {
+      setState(() {
+        _showFab = true;
+      });
+    }
     _lastOffset = offset;
   }
 
@@ -318,14 +330,56 @@ class _CommunityScreenState extends State<CommunityScreen> {
         },
         child: _buildPostList(posts),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => CreatePostScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: AnimatedSlide(
+        offset: _showFab ? Offset(0, 0) : Offset(0, 1),
+        duration: Duration(milliseconds: 200),
+        curve: Curves.ease,
+        child: AnimatedOpacity(
+          opacity: _showFab ? 1.0 : 0.0,
+          duration: Duration(milliseconds: 200),
+          child:
+              _showFab
+                  ? Padding(
+                    padding: const EdgeInsets.only(right: 5), // TODO: 임시 패딩
+                    child: FloatingActionButton(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      backgroundColor: Colors.white,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    CreatePostScreen(),
+                            transitionsBuilder: (
+                              context,
+                              animation,
+                              secondaryAnimation,
+                              child,
+                            ) {
+                              const begin = Offset(1.0, 0.0); // 오른쪽에서 시작
+                              const end = Offset.zero;
+                              const curve = Curves.ease;
+                              final tween = Tween(
+                                begin: begin,
+                                end: end,
+                              ).chain(CurveTween(curve: curve));
+                              return SlideTransition(
+                                position: animation.drive(tween),
+                                child: child,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.add, color: Colors.black),
+                    ),
+                  )
+                  : null,
+        ),
       ),
     );
   }

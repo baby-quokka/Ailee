@@ -1,5 +1,6 @@
 import 'package:ailee/screens/slab/slab_detail_screen.dart';
 import 'package:flutter/material.dart';
+import 'dummy_post.dart';
 
 // 슬랩 임시 모델
 class Slab {
@@ -189,7 +190,7 @@ class _SlabSearchScreenState extends State<SlabSearchScreen> {
                             builder:
                                 (context) => SlabDetailScreen(
                                   slabName: slab.title,
-                                  allPosts: [],
+                                  allPosts: dummyPosts,
                                   onBack: () {
                                     Navigator.pop(context);
                                     Navigator.pop(context);
