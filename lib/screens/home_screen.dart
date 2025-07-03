@@ -4,6 +4,7 @@ import 'package:ailee/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -87,17 +88,17 @@ class HomeScreenState extends State<HomeScreen> {
                     unselectedItemColor: Colors.grey[500]!,
                     currentIndex: _selectedIndex,
                     onTap: _onItemTapped,
-                    items: const [
+                    items: [
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.chat),
+                        icon: Icon(Symbols.chat_bubble, fill: _selectedIndex == 0 ? 1 : 0),
                         label: '',
                       ),
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.home),
+                        icon: Icon(Symbols.home, fill: _selectedIndex == 1 ? 1 : 0),
                         label: '',
                       ),
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.person),
+                        icon: Icon(Symbols.person, fill: _selectedIndex == 2 ? 1 : 0),
                         label: '',
                       ),
                     ],
