@@ -468,7 +468,8 @@ class _ChatScreenState extends State<ChatScreen> {
             width: 200,
             height: 200,
             fit: BoxFit.contain,
-          ),),
+          ),
+        ),
       ],
     );
   }
@@ -478,7 +479,7 @@ class _ChatScreenState extends State<ChatScreen> {
         Provider.of<AuthProvider>(context, listen: false).currentUser?.name ??
         '';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Column(
