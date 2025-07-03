@@ -7,9 +7,9 @@ class PostDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, String>> dummyComments = [
-      {'user': 'kevin0918k', 'content': '애국은... 돈으로 하는게 아닌데.', 'time': '7시간 전'},
-      {'user': 'mingyun7383', 'content': '집이 엄청 가깝나보네ㅋㅋㅋ', 'time': '13시간 전'},
-      {'user': post['username'], 'content': '네이버 지도상7km 입니다당', 'time': '8시간 전'},
+      {'user': 'kevin0918k', 'content': '화이팅!!', 'time': '7시간 전'},
+      {'user': 'mingyun7383', 'content': '힘내요', 'time': '13시간 전'},
+      {'user': post['username'], 'content': '넹', 'time': '8시간 전'},
     ];
     return Scaffold(
       appBar: AppBar(
@@ -84,19 +84,15 @@ class PostDetailScreen extends StatelessWidget {
               children: [
                 Icon(Icons.favorite_border, size: 22),
                 const SizedBox(width: 8),
-                Text('761'),
+                Text('${post['likes']}'),
                 const SizedBox(width: 16),
                 Icon(Icons.mode_comment_outlined, size: 22),
                 const SizedBox(width: 8),
-                Text('109'),
+                Text('${post['comments']}'),
                 const SizedBox(width: 16),
-                Icon(Icons.repeat, size: 22),
+                Icon(Icons.share_outlined, size: 22),
                 const SizedBox(width: 8),
-                Text('4'),
-                const SizedBox(width: 16),
-                Icon(Icons.send, size: 22),
-                const SizedBox(width: 8),
-                Text('23'),
+                Text('${post['shares']}'),
               ],
             ),
           ),

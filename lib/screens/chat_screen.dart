@@ -9,18 +9,28 @@ import '../models/chat_bot.dart';
 class WorkflowScreen extends StatelessWidget {
   final ChatBot bot;
   final TextEditingController workflowInputController;
-  const WorkflowScreen({Key? key, required this.bot, required this.workflowInputController}) : super(key: key);
+  const WorkflowScreen({
+    Key? key,
+    required this.bot,
+    required this.workflowInputController,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return _WorkflowScreenBody(bot: bot, workflowInputController: workflowInputController);
+    return _WorkflowScreenBody(
+      bot: bot,
+      workflowInputController: workflowInputController,
+    );
   }
 }
 
 class _WorkflowScreenBody extends StatefulWidget {
   final ChatBot bot;
   final TextEditingController workflowInputController;
-  const _WorkflowScreenBody({required this.bot, required this.workflowInputController});
+  const _WorkflowScreenBody({
+    required this.bot,
+    required this.workflowInputController,
+  });
 
   @override
   State<_WorkflowScreenBody> createState() => _WorkflowScreenBodyState();
@@ -65,7 +75,10 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
           onPressed: () async {
             final chatProvider = context.read<ChatProvider>();
             final sessionId = chatProvider.currentSession?.id;
-            print('[DEBUG] 뒤로가기 클릭 - 현재 세션 ID: ' + (sessionId?.toString() ?? 'null'));
+            print(
+              '[DEBUG] 뒤로가기 클릭 - 현재 세션 ID: ' +
+                  (sessionId?.toString() ?? 'null'),
+            );
             if (sessionId != null) {
               try {
                 await chatProvider.deleteSession(sessionId);
@@ -80,7 +93,10 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
             }
           },
         ),
-        title: Text(widget.bot.name, style: TextStyle(fontWeight: FontWeight.w500)),
+        title: Text(
+          widget.bot.name,
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -93,20 +109,26 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
           statusBarBrightness: Brightness.light,
         ),
       ),
-      body: _buildWorkflowUI(context, chatProvider, workflowResponse, isLoading),
+      body: _buildWorkflowUI(
+        context,
+        chatProvider,
+        workflowResponse,
+        isLoading,
+      ),
     );
   }
 
-  Widget _buildWorkflowUI(BuildContext context, ChatProvider chatProvider, List<String>? response, bool isLoading) {
+  Widget _buildWorkflowUI(
+    BuildContext context,
+    ChatProvider chatProvider,
+    List<String>? response,
+    bool isLoading,
+  ) {
     final cardDecoration = BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
       boxShadow: [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 8,
-          offset: Offset(0, 2),
-        ),
+        BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
       ],
     );
 
@@ -131,20 +153,25 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
                   child: Container(
                     padding: const EdgeInsets.all(18),
                     decoration: cardDecoration,
-                    child: isLoading
-                        ? Center(
-                            child: SizedBox(
-                              height: 28,
-                              child: SpinKitThreeBounce(
-                                color: Colors.grey,
-                                size: 18,
+                    child:
+                        isLoading
+                            ? Center(
+                              child: SizedBox(
+                                height: 28,
+                                child: SpinKitThreeBounce(
+                                  color: Colors.grey,
+                                  size: 18,
+                                ),
+                              ),
+                            )
+                            : Text(
+                              response != null ? response[0] : '',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black,
+                                fontFamily: 'Pretendard',
                               ),
                             ),
-                          )
-                        : Text(
-                            response != null ? response[0] : '',
-                            style: TextStyle(fontSize: 16, color: Colors.black, fontFamily: 'Pretendard'),
-                          ),
                   ),
                 ),
               ],
@@ -153,16 +180,19 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
           const SizedBox(height: 28),
           // 선택지 카드
           ...List.generate(4, (i) {
-            final text = response != null ? response[i+1] : '';
+            final text = response != null ? response[i + 1] : '';
             if (text == null || text.trim().isEmpty) return SizedBox.shrink();
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: InkWell(
                 borderRadius: BorderRadius.circular(18),
-                onTap: isLoading ? null : () {
-                  chatProvider.sendMessage(text, isWorkflow: true);
-                  FocusScope.of(context).unfocus();
-                },
+                onTap:
+                    isLoading
+                        ? null
+                        : () {
+                          chatProvider.sendMessage(text, isWorkflow: true);
+                          FocusScope.of(context).unfocus();
+                        },
                 child: Container(
                   decoration: cardDecoration,
                   padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -196,7 +226,10 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
                       decoration: InputDecoration(
                         hintText: '직접 입력',
                         border: InputBorder.none,
-                        hintStyle: TextStyle(fontFamily: 'Pretendard', color: Color(0xFF5A6CEA)),
+                        hintStyle: TextStyle(
+                          fontFamily: 'Pretendard',
+                          color: Color(0xFF5A6CEA),
+                        ),
                       ),
                       enabled: !isLoading,
                       onSubmitted: (text) {
@@ -210,16 +243,20 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
                   ),
                   IconButton(
                     icon: Icon(Icons.send, color: Color(0xFF5A6CEA)),
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            final text = widget.workflowInputController.text;
-                            if (text.trim().isNotEmpty) {
-                              chatProvider.sendMessage(text, isWorkflow: true);
-                              widget.workflowInputController.clear();
-                              FocusScope.of(context).unfocus();
-                            }
-                          },
+                    onPressed:
+                        isLoading
+                            ? null
+                            : () {
+                              final text = widget.workflowInputController.text;
+                              if (text.trim().isNotEmpty) {
+                                chatProvider.sendMessage(
+                                  text,
+                                  isWorkflow: true,
+                                );
+                                widget.workflowInputController.clear();
+                                FocusScope.of(context).unfocus();
+                              }
+                            },
                   ),
                 ],
               ),
@@ -240,8 +277,13 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final TextEditingController _workflowInputController = TextEditingController();
-  final List<String> samplePrompts = ['나의 강점이 뭘까?', '스트레스 해소법 추천해줘', '점심 뭐 먹을까?'];
+  final TextEditingController _workflowInputController =
+      TextEditingController();
+  final List<String> samplePrompts = [
+    '나의 강점이 뭘까?',
+    '스트레스 해소법 추천해줘',
+    '점심 뭐 먹을까?',
+  ];
 
   // 워크플로우 임시 진입 상태
   bool _forceWorkflow = false;
@@ -266,11 +308,13 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _forceWorkflow = isWorkflow;
     });
-    context.read<ChatProvider>().sendMessage(text, isWorkflow: isWorkflow).then((_) {
-      setState(() {
-        _forceWorkflow = false;
-      });
-    });
+    context.read<ChatProvider>().sendMessage(text, isWorkflow: isWorkflow).then(
+      (_) {
+        setState(() {
+          _forceWorkflow = false;
+        });
+      },
+    );
     _messageController.clear();
     FocusScope.of(context).unfocus();
   }
@@ -301,7 +345,11 @@ class _ChatScreenState extends State<ChatScreen> {
     final bot = chatProvider.currentBot;
 
     // prompt 버튼을 누른 직후에는 무조건 워크플로우 UI 진입
-    final showWorkflow = _forceWorkflow || (isWorkflow && workflowResponse != null && workflowResponse.length == 5);
+    final showWorkflow =
+        _forceWorkflow ||
+        (isWorkflow &&
+            workflowResponse != null &&
+            workflowResponse.length == 5);
 
     // 워크플로우 진입 시 새로운 스크린 push
     if (showWorkflow && !_workflowScreenPushed) {
@@ -309,15 +357,21 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _workflowScreenPushed = true;
         });
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => WorkflowScreen(bot: bot, workflowInputController: _workflowInputController),
-          ),
-        ).then((_) {
-          setState(() {
-            _workflowScreenPushed = false;
-          });
-        });
+        Navigator.of(context)
+            .push(
+              MaterialPageRoute(
+                builder:
+                    (_) => WorkflowScreen(
+                      bot: bot,
+                      workflowInputController: _workflowInputController,
+                    ),
+              ),
+            )
+            .then((_) {
+              setState(() {
+                _workflowScreenPushed = false;
+              });
+            });
       });
     }
 
@@ -382,9 +436,10 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Column(
               children: [
                 Expanded(
-                  child: hasStartedChat
-                      ? _buildChatList(messages)
-                      : _buildInitialCenterCharacter(bot),
+                  child:
+                      hasStartedChat
+                          ? _buildChatList(messages)
+                          : _buildInitialCenterCharacter(bot),
                 ),
                 if (!hasStartedChat) _buildSamplePromptButtons(),
                 _buildInputField(),
@@ -427,39 +482,43 @@ class _ChatScreenState extends State<ChatScreen> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: samplePrompts
-              .map(
-                (prompt) => Container(
-                  height: 50,
-                  margin: const EdgeInsets.only(right: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () => _sendMessageWithWorkflow(prompt, true),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            prompt,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black,
-                              fontFamily: 'Pretendard',
-                            ),
+          children:
+              samplePrompts
+                  .map(
+                    (prompt) => Container(
+                      height: 50,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () => _sendMessageWithWorkflow(prompt, true),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 16,
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                prompt,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black,
+                                  fontFamily: 'Pretendard',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              )
-              .toList(),
+                  )
+                  .toList(),
         ),
       ),
     );
@@ -719,7 +778,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     color: Colors.red[400],
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(Icons.delete, color: Colors.white, size: 32),
+                  child: const Icon(
+                    Icons.delete,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
                 confirmDismiss: (direction) async {
                   // 삭제 확인 없이 바로 삭제
@@ -730,7 +793,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color: isCurrentSession ? Colors.black : Colors.grey[300]!,
+                      color:
+                          isCurrentSession ? Colors.black : Colors.grey[300]!,
                       width: isCurrentSession ? 1.0 : 0.5,
                     ),
                   ),
@@ -758,7 +822,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  session.displayTitle.isNotEmpty ? session.displayTitle : 'No Title',
+                                  session.displayTitle.isNotEmpty
+                                      ? session.displayTitle
+                                      : 'No Title',
                                   style: const TextStyle(
                                     fontSize: 15,
                                     color: Colors.black,
@@ -812,4 +878,3 @@ class _ChatScreenState extends State<ChatScreen> {
     return '${diff.inDays}일 전';
   }
 }
-
