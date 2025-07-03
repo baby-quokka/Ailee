@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'post_screen.dart';
+import '../../screens/home_screen.dart';
 
 class SlabDetailScreen extends StatefulWidget {
   final String slabName;
@@ -19,6 +20,15 @@ class SlabDetailScreen extends StatefulWidget {
 
 class _SlabDetailScreenState extends State<SlabDetailScreen> {
   final TextEditingController _postController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeState = context.findAncestorStateOfType<HomeScreenState>();
+      homeState?.setBottomNavOffset(1.0, immediate: true);
+    });
+  }
 
   @override
   void dispose() {
@@ -97,8 +107,31 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) => PostDetailScreen(post: post),
+                                PageRouteBuilder(
+                                  pageBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                      ) => PostDetailScreen(post: post),
+                                  transitionsBuilder: (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    const begin = Offset(1.0, 0.0); // 오른쪽에서 시작
+                                    const end = Offset.zero;
+                                    const curve = Curves.ease;
+                                    final tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    return SlideTransition(
+                                      position: animation.drive(tween),
+                                      child: child,
+                                    );
+                                  },
                                 ),
                               );
                             },
