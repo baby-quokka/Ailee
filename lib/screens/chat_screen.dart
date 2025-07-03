@@ -664,7 +664,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[100],
+                  color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -673,7 +673,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     fontSize: 16,
                     color: Colors.black87,
                     height: 1.4,
-                    // fontFamily: 'NanumGothicBold',
+                    fontFamily: 'Pretendard',
                   ),
                 ),
               ),
@@ -690,15 +690,17 @@ class _ChatScreenState extends State<ChatScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.blue[100]!, Colors.blue[300]!],
-                      ),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
-                      Icons.smart_toy,
-                      color: Colors.blue,
-                      size: 24,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/emoji/man_3d_light.png',
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -710,7 +712,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         fontSize: 16,
                         color: Colors.black87,
                         height: 1.4,
-                        // fontFamily: 'NanumGothicBold',
+                        fontFamily: 'Pretendard',
                       ),
                     ),
                   ),
