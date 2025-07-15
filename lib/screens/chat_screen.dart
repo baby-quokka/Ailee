@@ -462,8 +462,8 @@ class _ChatScreenState extends State<ChatScreen> {
         Center(
           child: Image.asset(
             'assets/emoji/man_tipping_hand_3d_light.png',
-            width: 200,
-            height: 200,
+            width: 150,
+            height: 150,
             fit: BoxFit.contain,
           ),
         ),

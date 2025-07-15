@@ -79,10 +79,10 @@ class _MainTabViewState extends State<_MainTabView> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey[500]!, height: 0.5),
-        ),
+        // bottom: PreferredSize(
+        //   preferredSize: const Size.fromHeight(1),
+        //   child: Container(color: Colors.grey[500]!, height: 0.5),
+        // ),
       ),
       drawer: Drawer(
         child: ListView(

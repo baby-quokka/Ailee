@@ -66,10 +66,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAutoLogin() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     // 자동 로그인 시도
     await authProvider.tryAutoLogin();
-    
+
     if (mounted) {
       // 자동 로그인 성공 여부와 관계없이 HomeScreen으로 이동
       // HomeScreen에서 로그인 상태에 따라 적절한 화면을 표시

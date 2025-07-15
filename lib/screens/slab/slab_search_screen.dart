@@ -153,7 +153,13 @@ class _SlabSearchScreenState extends State<SlabSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('슬랩 검색')),
+      appBar: AppBar(
+        title: const Text('슬랩 검색'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        surfaceTintColor: Colors.white,
+        elevation: 1,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

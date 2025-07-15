@@ -1,6 +1,7 @@
 import 'package:ailee/screens/slab/slab_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'slab_search_screen.dart';
+import 'package:ailee/screens/slab/top_slab_list_screen.dart';
 import 'package:ailee/screens/home_screen.dart';
 import 'dummy_post.dart';
 
@@ -25,7 +26,7 @@ class Slab {
 }
 
 class SlabInfoScreen extends StatefulWidget {
-  SlabInfoScreen({super.key});
+  const SlabInfoScreen({super.key});
 
   @override
   State<SlabInfoScreen> createState() => _SlabInfoScreenState();
@@ -148,7 +149,7 @@ class _SlabInfoScreenState extends State<SlabInfoScreen> {
   bool showSecret = false;
 
   // Top 5 슬랩: isSecret과 isSubscribed가 false인 슬랩 중 postCount 내림차순 상위 5개
-  List<Slab> get top5Slabs {
+  List<Slab> get topSlabs {
     List<Slab> filtered = allSlabs.where((s) => !s.isSecret).toList();
     if (excludeSubscribed) {
       filtered = filtered.where((s) => !s.isSubscribed).toList();
@@ -180,96 +181,189 @@ class _SlabInfoScreenState extends State<SlabInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. 검색창
-              _buildSearchBar(),
-              const SizedBox(height: 24),
-              // 2. Top 5 슬랩
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Top 5 슬랩',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  // 구독 제외 체크박스
-                  Row(
-                    children: [
-                      const Text('구독 제외', style: TextStyle(fontSize: 14)),
-                      Checkbox(
-                        value: excludeSubscribed,
-                        onChanged: (val) {
-                          setState(() {
-                            excludeSubscribed = val ?? true;
-                          });
-                        },
-                        activeColor: Colors.blue,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 110,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: top5Slabs.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder:
-                      (context, idx) => SizedBox(
-                        width: 260,
-                        child: SlabCard(
-                          slab: top5Slabs[idx],
-                          allPosts: dummyPosts,
-                        ),
-                      ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 검색창+여백 흰색 배경
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: _buildSearchBar(),
+            ),
+            // 검색창 아래에 추가
+            Container(
+              height: 36,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white, // 위쪽 완전 흰색
+                    Color(0xFFF8F9FA), // 중간 단계 (연회색, grey[50]와 비슷)
+                    Color(0xFFF8F9FA), // 아래쪽 연회색
+                  ],
+                  stops: [0.0, 0.7, 1.0],
                 ),
               ),
-              const SizedBox(height: 32),
-              // 3. MY슬랩 + 비공개 체크박스
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+            // 나머지 전체 패딩
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 2. 인기 슬랩
                   const Text(
-                    'MY슬랩',
+                    '인기 슬랩',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
+                  const SizedBox(height: 12),
+                  // 텍스트 위주 간단 리스트
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  TopSlabListScreen(
+                                    slabs: allSlabs,
+                                    allPosts: dummyPosts,
+                                  ),
+                          transitionsBuilder: (
+                            context,
+                            animation,
+                            secondaryAnimation,
+                            child,
+                          ) {
+                            const begin = Offset(1.0, 0.0); // 오른쪽에서 시작
+                            const end = Offset.zero;
+                            const curve = Curves.ease;
+                            final tween = Tween(
+                              begin: begin,
+                              end: end,
+                            ).chain(CurveTween(curve: curve));
+                            return SlideTransition(
+                              position: animation.drive(tween),
+                              child: child,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                    child: Card(
+                      color: Colors.white,
+                      elevation: 0.1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children:
+                              topSlabs
+                                  .map(
+                                    (slab) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                        horizontal: 8,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            '${topSlabs.indexOf(slab) + 1}.  ',
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${slab.emoji} ',
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${slab.title} ',
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 16,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              '- ${slab.desc}',
+                                              style: const TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 12,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // 3. MY슬랩 + 비공개 체크박스
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('비공개', style: TextStyle(fontSize: 14)),
-                      Checkbox(
-                        value: showSecret,
-                        onChanged: (val) {
-                          setState(() {
-                            showSecret = val ?? false;
-                          });
-                        },
-                        activeColor: Colors.blue,
+                      const Text(
+                        'MY슬랩',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          const Text('비공개', style: TextStyle(fontSize: 14)),
+                          Checkbox(
+                            value: showSecret,
+                            onChanged: (val) {
+                              setState(() {
+                                showSecret = val ?? false;
+                              });
+                            },
+                            activeColor: Colors.blue,
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                  // const SizedBox(height: 4),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(), // 스크롤 중복 방지
+                    itemCount:
+                        showSecret ? mySecretSlabs.length : mySlabs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder:
+                        (context, idx) => SlabCard(
+                          slab: showSecret ? mySecretSlabs[idx] : mySlabs[idx],
+                          allPosts: dummyPosts,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
                 ],
               ),
-              const SizedBox(height: 12),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(), // 스크롤 중복 방지
-                itemCount: showSecret ? mySecretSlabs.length : mySlabs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder:
-                    (context, idx) => SlabCard(
-                      slab: showSecret ? mySecretSlabs[idx] : mySlabs[idx],
-                      allPosts: dummyPosts,
-                    ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -339,8 +433,8 @@ class SlabCard extends StatelessWidget {
         );
       },
       child: Card(
-        color: Colors.grey[100],
-        elevation: 2,
+        color: Colors.white,
+        elevation: 0.1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),

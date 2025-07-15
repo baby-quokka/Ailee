@@ -1,11 +1,20 @@
 import 'package:ailee/screens/home_screen.dart';
-import 'package:ailee/screens/slab/slab_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'post_screen.dart';
 import 'dummy_post.dart';
 import 'create_post_screen.dart';
+import 'package:ailee/widgets/post_list.dart';
+import 'slab_detail_screen.dart';
+
+const List<List<Color>> workflowGradients = [
+  [Color(0xFF36D1C4), Color(0xFF1E90FF)],
+  [Color(0xFFFFE53B), Color(0xFFFF2525)],
+  [Color(0xFF43E97B), Color(0xFF38F9D7)],
+  [Color(0xFFFF5F6D), Color(0xFFFFC371)],
+  [Color(0xFF8E2DE2), Color(0xFFFD6E6A)],
+];
 
 class CommunityScreen extends StatefulWidget {
   final bool showSubscribeLabel;
@@ -57,259 +66,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
     super.dispose();
   }
 
-  Widget _buildPostList(List<Map<String, dynamic>> posts) {
-    return posts.isEmpty
-        ? const Center(child: Text('포스트가 없습니다.'))
-        : ListView.separated(
-          controller: _scrollController,
-          itemCount: posts.length,
-          separatorBuilder:
-              (context, index) => Divider(height: 1, color: Colors.grey[200]),
-          itemBuilder: (context, index) {
-            final post = posts[index];
-            return InkWell(
-              onTap: () {
-                final homeState =
-                    context.findAncestorStateOfType<HomeScreenState>();
-                homeState?.setBottomNavOffset(0.0, immediate: true);
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder:
-                        (context, animation, secondaryAnimation) =>
-                            PostDetailScreen(post: post),
-                    transitionsBuilder: (
-                      context,
-                      animation,
-                      secondaryAnimation,
-                      child,
-                    ) {
-                      const begin = Offset(1.0, 0.0); // 오른쪽에서 시작
-                      const end = Offset.zero;
-                      const curve = Curves.ease;
-                      final tween = Tween(
-                        begin: begin,
-                        end: end,
-                      ).chain(CurveTween(curve: curve));
-                      return SlideTransition(
-                        position: animation.drive(tween),
-                        child: child,
-                      );
-                    },
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 20,
-                  horizontal: 16,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.grey[200],
-                      child: Icon(Icons.person, color: Colors.grey[500]),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                post['username'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    PageRouteBuilder(
-                                      pageBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                          ) => SlabDetailScreen(
-                                            slabName: post['slab'],
-                                            allPosts: dummyPosts,
-                                            onBack:
-                                                () =>
-                                                    Navigator.of(context).pop(),
-                                          ),
-                                      transitionsBuilder: (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                        child,
-                                      ) {
-                                        const begin = Offset(
-                                          1.0,
-                                          0.0,
-                                        ); // 오른쪽에서 시작
-                                        const end = Offset.zero;
-                                        const curve = Curves.ease;
-                                        final tween = Tween(
-                                          begin: begin,
-                                          end: end,
-                                        ).chain(CurveTween(curve: curve));
-                                        return SlideTransition(
-                                          position: animation.drive(tween),
-                                          child: child,
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  '» ${post['slab']}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                post['time'],
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const Spacer(),
-                              Icon(
-                                Icons.more_horiz,
-                                size: 18,
-                                color: Colors.grey[600],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                post['content'],
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  height: 1.6,
-                                ),
-                              ),
-                              if (post['image'] != null) ...[
-                                const SizedBox(height: 10),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    post['image'],
-                                    height: 180,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
-                                              height: 180,
-                                              color: Colors.grey[200],
-                                              child: const Center(
-                                                child: Icon(Icons.broken_image),
-                                              ),
-                                            ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 14),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.favorite_border,
-                                        size: 18,
-                                        color: Colors.grey[600],
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${post['likes']}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.mode_comment_outlined,
-                                        size: 18,
-                                        color: Colors.grey[600],
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${post['comments']}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.share_outlined,
-                                        size: 18,
-                                        color: Colors.grey[600],
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${post['shares']}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Icon(
-                                    Icons.repeat_rounded,
-                                    size: 18,
-                                    color: Colors.grey[600],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-  }
-
   @override
   Widget build(BuildContext context) {
     // 구독 라벨 표시 여부에 따라 자유 슬랩 포스트만 표시 - TODO: 추후 수정 예정
     // 구독 슬랩 목록을 서버에서 받아온 후 -> allPosts.where((p) => mySubscribedSlabs.contains(p['slab'])).toList()
     final posts =
         widget.showSubscribeLabel
-            ? dummyPosts.where((p) => p['slab'] == '자유').toList()
+            ? dummyPosts
+                .where((p) => p['slab'] == '자유' || p['slab'] == '심리')
+                .toList()
             : dummyPosts;
     return Scaffold(
       body: NotificationListener<UserScrollNotification>(
@@ -328,57 +93,103 @@ class _CommunityScreenState extends State<CommunityScreen> {
           }
           return false;
         },
-        child: _buildPostList(posts),
-      ),
-      floatingActionButton: AnimatedSlide(
-        offset: _showFab ? Offset(0, 0) : Offset(0, 1),
-        duration: Duration(milliseconds: 200),
-        curve: Curves.ease,
-        child: AnimatedOpacity(
-          opacity: _showFab ? 1.0 : 0.0,
-          duration: Duration(milliseconds: 200),
-          child:
-              _showFab
-                  ? Padding(
-                    padding: const EdgeInsets.only(right: 5), // TODO: 임시 패딩
-                    child: FloatingActionButton(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      backgroundColor: Colors.white,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    CreatePostScreen(),
-                            transitionsBuilder: (
-                              context,
-                              animation,
-                              secondaryAnimation,
-                              child,
-                            ) {
-                              const begin = Offset(1.0, 0.0); // 오른쪽에서 시작
-                              const end = Offset.zero;
-                              const curve = Curves.ease;
-                              final tween = Tween(
-                                begin: begin,
-                                end: end,
-                              ).chain(CurveTween(curve: curve));
-                              return SlideTransition(
-                                position: animation.drive(tween),
-                                child: child,
-                              );
-                            },
-                          ),
-                        );
-                      },
-                      child: const Icon(Icons.add, color: Colors.black),
-                    ),
-                  )
-                  : null,
+        child: PostListWidget(
+          posts: posts,
+          workflowGradients: workflowGradients,
+          showSlabName: true,
+          scrollController: _scrollController,
+          showFab: _showFab,
+          onFabTap: () {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder:
+                    (context, animation, secondaryAnimation) =>
+                        CreatePostScreen(),
+                transitionsBuilder: (
+                  context,
+                  animation,
+                  secondaryAnimation,
+                  child,
+                ) {
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  const curve = Curves.ease;
+                  final tween = Tween(
+                    begin: begin,
+                    end: end,
+                  ).chain(CurveTween(curve: curve));
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
+              ),
+            );
+          },
+          onPostTap: (post) {
+            final homeState =
+                context.findAncestorStateOfType<HomeScreenState>();
+            homeState?.setBottomNavOffset(0.0, immediate: true);
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder:
+                    (context, animation, secondaryAnimation) =>
+                        PostDetailScreen(post: post),
+                transitionsBuilder: (
+                  context,
+                  animation,
+                  secondaryAnimation,
+                  child,
+                ) {
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  const curve = Curves.ease;
+                  final tween = Tween(
+                    begin: begin,
+                    end: end,
+                  ).chain(CurveTween(curve: curve));
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
+              ),
+            );
+          },
+          onSlabNameTap: (slabName) {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder:
+                    (context, animation, secondaryAnimation) =>
+                        SlabDetailScreen(
+                          slabName: slabName,
+                          allPosts: dummyPosts,
+                          onBack: () => Navigator.of(context).pop(),
+                        ),
+                transitionsBuilder: (
+                  context,
+                  animation,
+                  secondaryAnimation,
+                  child,
+                ) {
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  const curve = Curves.ease;
+                  final tween = Tween(
+                    begin: begin,
+                    end: end,
+                  ).chain(CurveTween(curve: curve));
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
+              ),
+            );
+          },
         ),
       ),
     );
