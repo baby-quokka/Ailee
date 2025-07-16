@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
 import '../models/chat_session.dart';
@@ -194,7 +195,7 @@ class ChatProvider with ChangeNotifier {
   }
 
   /// 메시지를 전송하고 응답을 받는 메서드
-  Future<void> sendMessage(String content, {bool? isWorkflow}) async {
+  Future<void> sendMessage(String content, {bool? isWorkflow, bool? isResearchActive, List<XFile>? images}) async {
     if (content.trim().isEmpty || _currentUserId == null) return;
 
     // 첫 메시지인 경우 새 세션 생성
@@ -222,6 +223,7 @@ class ChatProvider with ChangeNotifier {
       message: content,
       sender: 'user',
       order: _currentSession!.messages.length,
+      localImagePaths: images?.map((img) => img.path).toList(),
     );
 
     // 현재 세션에 사용자 메시지 추가
@@ -244,6 +246,8 @@ class ChatProvider with ChangeNotifier {
         userId: _currentUserId!,
         characterId: ChatSession.getCharacterIdFromBotId(_currentBot.id),
         isWorkflow: _currentSession!.isWorkflow,
+        isResearchActive: isResearchActive ?? false,
+        images: images,
       );
       // 워크플로우 응답 저장
       if (response['is_workflow'] == true && response['response'] is List && response['response'].length == 5) {
