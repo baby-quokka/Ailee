@@ -1,26 +1,9 @@
+import 'package:ailee/models/slab/slab.dart';
+import 'package:ailee/providers/slab_provider.dart';
 import 'package:ailee/screens/slab/slab_detail_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dummy_post.dart';
-
-// 슬랩 임시 모델
-class Slab {
-  final String emoji;
-  final String title;
-  final String desc;
-  final int postCount;
-  final int memberCount;
-  final bool isSecret;
-  final bool isSubscribed;
-  Slab({
-    required this.emoji,
-    required this.title,
-    required this.desc,
-    required this.postCount,
-    required this.memberCount,
-    required this.isSecret,
-    required this.isSubscribed,
-  });
-}
 
 class SlabSearchScreen extends StatefulWidget {
   const SlabSearchScreen({super.key});
@@ -33,121 +16,11 @@ class _SlabSearchScreenState extends State<SlabSearchScreen> {
   final TextEditingController _controller = TextEditingController();
   String query = '';
 
-  // 임시 슬랩 데이터 (info_screen과 동일)
-  final List<Slab> allSlabs = [
-    Slab(
-      emoji: '🗽',
-      title: '자유',
-      desc: '자유롭게 이야기하는 공간',
-      postCount: 140,
-      memberCount: 600,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '💼',
-      title: '진로',
-      desc: '진로 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 130,
-      memberCount: 500,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '🔥',
-      title: '학업',
-      desc: '학업 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 120,
-      memberCount: 340,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '💖',
-      title: '연애',
-      desc: '연애 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 98,
-      memberCount: 210,
-      isSecret: false,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '🤔',
-      title: '취미/모임',
-      desc: '취미, 소모임, 동호회',
-      postCount: 75,
-      memberCount: 180,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '👥',
-      title: '인간관계',
-      desc: '인간관계 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 60,
-      memberCount: 150,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '🍔',
-      title: '맛집',
-      desc: '맛집 추천, 음식 이야기',
-      postCount: 55,
-      memberCount: 100,
-      isSecret: true,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '🧠',
-      title: '심리',
-      desc: '심리 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 50,
-      memberCount: 80,
-      isSecret: false,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '💬',
-      title: '소통',
-      desc: '소통 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 45,
-      memberCount: 120,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '🎮',
-      title: '게임',
-      desc: '게임 정보, 친구 구함',
-      postCount: 40,
-      memberCount: 90,
-      isSecret: true,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '🏋️',
-      title: '운동',
-      desc: '운동, 건강, 다이어트',
-      postCount: 35,
-      memberCount: 70,
-      isSecret: false,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '🎵',
-      title: '음악',
-      desc: '음악 추천, 공연 정보',
-      postCount: 25,
-      memberCount: 60,
-      isSecret: true,
-      isSubscribed: false,
-    ),
-  ];
-
   List<Slab> get filteredSlabs {
     if (query.isEmpty) return [];
-    return allSlabs.where((s) => s.title.contains(query)).toList();
+    return Provider.of<SlabProvider>(
+      context,
+    ).slabs.where((s) => s.name.contains(query)).toList();
   }
 
   @override
@@ -195,7 +68,7 @@ class _SlabSearchScreenState extends State<SlabSearchScreen> {
                           MaterialPageRoute(
                             builder:
                                 (context) => SlabDetailScreen(
-                                  slabName: slab.title,
+                                  slabName: slab.name,
                                   allPosts: dummyPosts,
                                   onBack: () {
                                     Navigator.pop(context);
@@ -207,16 +80,16 @@ class _SlabSearchScreenState extends State<SlabSearchScreen> {
                       },
                       child: ListTile(
                         leading: Text(
-                          slab.emoji,
+                          slab.imoji ?? '',
                           style: const TextStyle(fontSize: 24),
                         ),
                         title: Text(
-                          slab.title,
+                          slab.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
-                          slab.desc,
+                          slab.description ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -229,7 +102,7 @@ class _SlabSearchScreenState extends State<SlabSearchScreen> {
                               children: [
                                 const Icon(Icons.article, size: 16),
                                 Text(
-                                  '${slab.postCount}',
+                                  '${slab.users.length}',
                                   style: const TextStyle(fontSize: 13),
                                 ),
                               ],
@@ -240,7 +113,7 @@ class _SlabSearchScreenState extends State<SlabSearchScreen> {
                               children: [
                                 const Icon(Icons.person, size: 16),
                                 Text(
-                                  '${slab.memberCount}',
+                                  '${slab.users.length}',
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: Colors.grey,

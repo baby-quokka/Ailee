@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../providers/chat_provider.dart';
-import '../models/chat_message.dart';
-import '../models/chat_bot.dart';
+import '../models/chat/chat_message.dart';
+import '../models/slab/chat_bot.dart';
 import '../providers/auth_provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -183,7 +183,7 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
           // 선택지 카드
           ...List.generate(4, (i) {
             final text = response != null ? response[i + 1] : '';
-            if (text == null || text.trim().isEmpty) return SizedBox.shrink();
+            if (text.trim().isEmpty) return SizedBox.shrink();
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: InkWell(

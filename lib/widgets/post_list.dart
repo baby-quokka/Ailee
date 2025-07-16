@@ -26,23 +26,37 @@ class PostListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (posts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.forum_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              '아직 게시글이 없습니다',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+      return Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.forum_outlined, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  '아직 게시글이 없습니다',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  '첫 번째 게시글을 작성해보세요!',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
             ),
-            SizedBox(height: 8),
-            Text(
-              '첫 번째 게시글을 작성해보세요!',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          if (showFab && onFabTap != null)
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: FloatingActionButton(
+                backgroundColor: Colors.white,
+                onPressed: onFabTap,
+                child: const Icon(Icons.add, color: Colors.black),
+              ),
             ),
-          ],
-        ),
+        ],
       );
     }
     return Stack(
