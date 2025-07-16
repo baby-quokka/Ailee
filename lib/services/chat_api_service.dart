@@ -114,11 +114,6 @@ class ChatApiService {
 
   // POST 요청 헬퍼 (재시도 로직 포함)
   Future<T> _post<T>(String endpoint, Map<String, dynamic> data) async {
-    print('=== _post 요청 디버깅 시작 ===');
-    print('요청 URL: ${ApiConfig.baseUrl}$endpoint');
-    print('요청 헤더: $_headers');
-    print('요청 본문: ${json.encode(data)}');
-    
     int retryCount = 0;
     const maxRetries = 3;
 
@@ -132,26 +127,16 @@ class ChatApiService {
             )
             .timeout(ApiConfig.timeout);
 
-        print('응답 상태 코드: ${response.statusCode}');
-        print('응답 헤더: ${response.headers}');
-        print('응답 본문: ${response.body}');
-
         _handleError(response);
         final parsedResponse = json.decode(response.body) as T;
-        print('파싱된 응답: $parsedResponse');
-        print('=== _post 요청 디버깅 완료 ===');
         return parsedResponse;
       } catch (e) {
-        print('=== _post 요청 에러 (시도 ${retryCount + 1}/$maxRetries) ===');
-        print('에러 타입: ${e.runtimeType}');
-        print('에러 메시지: $e');
         retryCount++;
 
         if (e.toString().contains('Connection closed') ||
             e.toString().contains('SocketException') ||
             e.toString().contains('TimeoutException')) {
           if (retryCount < maxRetries) {
-            print('네트워크 오류로 재시도 중... (${retryCount * 2}초 대기)');
             await Future.delayed(Duration(seconds: retryCount * 2));
 
             // 클라이언트 재생성
@@ -166,7 +151,6 @@ class ChatApiService {
       }
     }
 
-    print('=== _post 요청 최대 재시도 초과 ===');
     throw ApiException('최대 재시도 횟수를 초과했습니다.', 0);
   }
 
@@ -229,16 +213,6 @@ class ChatApiService {
     }
     
     // 이미지가 없는 경우 기존 방식 사용
-    print('=== 일반 JSON 요청 디버깅 시작 ===');
-    print('요청 데이터:');
-    print('  userInput: $userInput');
-    print('  userId: $userId');
-    print('  characterId: $characterId');
-    print('  isWorkflow: $isWorkflow');
-    print('  isResearchActive: $isResearchActive');
-    print('  sessionId: $sessionId');
-    print('  workflowId: $workflowId');
-    
     final data = <String, dynamic>{
       'user_input': userInput,
       'user_id': userId,
@@ -254,14 +228,11 @@ class ChatApiService {
     if (workflowId != null) {
       data['workflow_id'] = workflowId;
     }
-    print('전송할 JSON 데이터: $data');
     
     final response = await _post<Map<String, dynamic>>(
       ApiConfig.chatSession,
       data,
     );
-    print('서버 응답: ${response['search_result']}');
-    print('=== 일반 JSON 요청 디버깅 완료 ===');
 
     return {
       'response': response['response'],
@@ -282,17 +253,6 @@ class ChatApiService {
     bool isResearchActive = false,
     required List<XFile> images,
   }) async {
-    print('=== _sendMessageWithImages 디버깅 시작 ===');
-    print('요청 데이터:');
-    print('  userInput: $userInput');
-    print('  userId: $userId');
-    print('  characterId: $characterId');
-    print('  isWorkflow: $isWorkflow');
-    print('  isResearchActive: $isResearchActive');
-    print('  sessionId: $sessionId');
-    print('  workflowId: $workflowId');
-    print('  이미지 개수: ${images.length}');
-    
     // 이미지 파일 유효성 검사
     if (images.isEmpty) {
       throw ApiException('이미지 파일이 없습니다.', 0);
@@ -308,8 +268,6 @@ class ChatApiService {
       final filteredHeaders = Map<String, String>.from(_headers)
         ..removeWhere((key, value) => key.toLowerCase() == 'content-type');
       request.headers.addAll(filteredHeaders);
-      print('요청 URL: ${ApiConfig.baseUrl}${ApiConfig.chatSession}');
-      print('요청 헤더: ${request.headers}');
 
       // 텍스트 필드들 추가
       request.fields['user_input'] = userInput;
@@ -324,27 +282,22 @@ class ChatApiService {
       if (workflowId != null) {
         request.fields['workflow_id'] = workflowId.toString();
       }
-      print('텍스트 필드들: ${request.fields}');
 
       final List<XFile> imagesCopy = List<XFile>.from(images);
       final int originalLength = images.length;
       // 이미지 파일들 추가
       for (int i = 0; i < originalLength; i++) {
-        print('>>> 루프 시작: 이미지 ${i + 1}');
         final image = imagesCopy[i];
-        print('이미지 파일 ${i + 1} 처리 중...');
         
         // 파일 존재 확인
         final file = File(image.path);
         if (!await file.exists()) {
-          print('경고: 이미지 파일이 존재하지 않음: ${image.path}');
           continue;
         }
         
         // 파일 크기 확인
         final fileSize = await file.length();
         if (fileSize == 0) {
-          print('경고: 이미지 파일이 비어있음: ${image.path}');
           continue;
         }
         
@@ -353,13 +306,11 @@ class ChatApiService {
         try {
           imageBytes = await image.readAsBytes();
         } catch (e) {
-          print('이미지 파일 읽기 실패: ${image.path}, 에러: $e');
           continue;
         }
         
         // 바이트 배열 유효성 검사
         if (imageBytes.isEmpty) {
-          print('경고: 읽은 이미지 데이터가 비어있음: ${image.path}');
           continue;
         }
         
@@ -387,16 +338,7 @@ class ChatApiService {
             contentType = 'image/jpeg'; // 기본값
         }
 
-        print('이미지 파일 ${i + 1} 정보:');
-        print('  파일명: $fileName');
-        print('  파일 경로: ${image.path}');
-        print('  확장자: $fileExtension');
-        print('  Content-Type: $contentType');
-        print('  파일 크기: ${imageBytes.length} bytes');
-
-        
         final mediaType = MediaType.parse(contentType);
-        print('  MediaType 파싱 성공: $mediaType');
           
         request.files.add(
           http.MultipartFile.fromBytes(
@@ -406,12 +348,7 @@ class ChatApiService {
             contentType: mediaType,
           ),
         );
-        print('  파일 추가 성공');
-        print('${images.length}, $i');
-        print('<<< 루프 완료: 이미지 ${i + 1}');
       }
-      
-      print('업로드할 파일 개수: ${request.files.length}');
       
       // 업로드할 파일이 없으면 에러
       if (request.files.isEmpty) {
@@ -419,26 +356,16 @@ class ChatApiService {
       }
 
       final streamedResponse = await request.send().timeout(ApiConfig.timeout);
-      print('응답 상태 코드: ${streamedResponse.statusCode}');
-      print('응답 헤더: ${streamedResponse.headers}');
       
       final response = await http.Response.fromStream(streamedResponse);
-      print('응답 본문: ${response.body}');
-
-      _handleError(response);
       
       // 응답 파싱
       Map<String, dynamic> responseData;
       try {
         responseData = json.decode(response.body) as Map<String, dynamic>;
       } catch (e) {
-        print('응답 JSON 파싱 실패: $e');
-        print('응답 본문: ${response.body}');
         throw ApiException('서버 응답을 파싱할 수 없습니다: $e', response.statusCode);
       }
-      
-      print('파싱된 응답 데이터: $responseData');
-      print('=== _sendMessageWithImages 디버깅 완료 ===');
 
       return {
         'response': responseData['response'],
@@ -447,11 +374,6 @@ class ChatApiService {
         'is_fa': responseData['is_fa'] ?? false,
       };
     } catch (e) {
-      print('=== _sendMessageWithImages 에러 발생 ===');
-      print('에러 타입: ${e.runtimeType}');
-      print('에러 메시지: $e');
-      print('=== 에러 디버깅 완료 ===');
-      
       if (e is ApiException) rethrow;
       throw ApiException('이미지 업로드 중 오류가 발생했습니다: $e', 0);
     }
@@ -464,7 +386,6 @@ class ChatApiService {
       final response = await _getClient.delete(url, headers: _headers);
       _handleError(response);
     } catch (e) {
-      print('deleteChatSession 예외: $e');
       rethrow;
     }
   }
