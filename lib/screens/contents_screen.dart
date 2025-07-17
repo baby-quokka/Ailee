@@ -4,6 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../models/chat_bot.dart';
 import '../providers/chat_provider.dart';
 import 'workflow_screen.dart';
+import 'voice_screen.dart';
 
 class ContentsScreen extends StatefulWidget {
   final ChatBot bot;
@@ -83,8 +84,10 @@ class _ContentsScreenState extends State<ContentsScreen> {
                       color: const Color(0xFFE8F0FE),
                       textColor: const Color(0xFF5A6CEA),
                       onTap: _isLoading ? null : () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('통화 형식은 준비 중입니다.')),
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const VoiceScreen(),
+                          ),
                         );
                       },
                     ),
