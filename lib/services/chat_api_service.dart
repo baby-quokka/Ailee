@@ -180,6 +180,21 @@ class ChatApiService {
     final response = await _get<List<dynamic>>(
       '${ApiConfig.chatSession}$sessionId/',
     );
+
+    // 디버깅: 응답 원본 출력
+    print('=== getSessionMessages 응답 디버깅 ===');
+    print('서버 응답 원본: $response');
+    print('응답 타입:  [32m${response.runtimeType} [0m');
+    if (response is List) {
+      for (var item in response) {
+        print('item: $item');
+      }
+      if (response.isNotEmpty) {
+        print('첫 번째 메시지: ${response[0]}');
+      }
+    }
+    print('=== getSessionMessages 디버깅 끝 ===');
+
     return response.map((json) => ChatMessage.fromJson(json)).toList();
   }
 
