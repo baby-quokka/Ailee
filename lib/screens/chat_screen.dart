@@ -10,6 +10,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'workflow_screen.dart';
+import 'contents_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -64,20 +65,17 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  void _sendMessageWithWorkflow(String text, bool isWorkflow) {
-    if (text.trim().isEmpty) return;
-    setState(() {
-      _forceWorkflow = isWorkflow;
-    });
-    context.read<ChatProvider>().sendMessage(text, isWorkflow: isWorkflow).then(
-      (_) {
-        setState(() {
-          _forceWorkflow = false;
-        });
-      },
+
+  void _showContentsScreen() {
+    final bot = context.read<ChatProvider>().currentBot;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ContentsScreen(
+          bot: bot,
+          workflowInputController: _workflowInputController,
+        ),
+      ),
     );
-    _messageController.clear();
-    FocusScope.of(context).unfocus();
   }
 
   Widget _buildLoadingIndicator() {
@@ -270,13 +268,13 @@ class _ChatScreenState extends State<ChatScreen> {
         width: double.infinity,
         height: 80,
         child: FloatingButton(
-          onTap: () => _sendMessageWithWorkflow('고민 상담하기', true),
+          onTap: _showContentsScreen,
           child: Material(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(16),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () => _sendMessageWithWorkflow('고민 상담하기', true),
+              onTap: _showContentsScreen,
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
