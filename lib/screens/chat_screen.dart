@@ -45,6 +45,11 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   int _lastMessageCount = 0; // 이전 메시지 개수 추적
 
+  // 편집 모드 상태 변수 추가
+  ChatMessage? _editingMessage;
+  int? _editingMessageIndex;
+  bool get _isEditing => _editingMessage != null;
+
   void _showEditOptions(BuildContext context, Offset position, ChatMessage message, int index, VoidCallback onEdit) {
     _removeEditOptions();
     final overlay = Overlay.of(context);
@@ -79,7 +84,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 _removeEditOptions();
               }),
               _buildEditOption('편집', Icons.edit, () {
-                onEdit();
+                setState(() {
+                  _messageController.text = message.message;
+                  _editingMessage = message;
+                  _editingMessageIndex = index;
+                  _selectedImages.clear();
+                });
                 _removeEditOptions();
               }),
               _buildEditOption('공유', Icons.share, () {
@@ -142,6 +152,12 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
     
+    // 편집 모드일 때는 메시지 수정
+    if (_isEditing && _editingMessageIndex != null) {
+      _editMessage();
+      return;
+    }
+    
     context.read<ChatProvider>().sendMessage(
       text,
       isResearchActive: _isResearchActive,
@@ -155,6 +171,27 @@ class _ChatScreenState extends State<ChatScreen> {
       _selectedImages.clear();
       _isResearchActive = false;
     });
+  }
+
+  // 메시지 수정 함수
+  void _editMessage() {
+    
+    if (_editingMessage != null && _editingMessageIndex != null) {
+      // 메시지 수정 API 호출
+      context.read<ChatProvider>().sendMessage(
+        _messageController.text,
+        isResearchActive: _isResearchActive,
+        images: _selectedImages.isNotEmpty ? _selectedImages : null,
+        isEdit: true,
+        order: _editingMessage!.order,
+      );
+      setState(() {
+        _editingMessage = null;
+        _editingMessageIndex = null;
+        _messageController.clear();
+      });
+      FocusScope.of(context).unfocus();
+    }
   }
 
 
@@ -499,7 +536,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 hintStyle: TextStyle(color: Colors.grey[500]),
               ),
             ),
-            // 하단 + 버튼과 검색 버튼
+            // 하단 + 버튼과 검색/수정 버튼
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -601,8 +638,117 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                 ),
-                // '검색 x' 버튼
-                if (_isResearchActive) ...[
+                // 검색 x 버튼 또는 편집(수정) 버튼
+                if (_isEditing && _isResearchActive) ...[
+                  const SizedBox(width: 8),
+                  Row(
+                    children: [
+                      SizedBox(
+                        height: 40,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFE8F0FE),
+                            foregroundColor: Color(0xFF5A6CEA),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Pretendard',
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                            minimumSize: const Size(0, 40),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _editingMessage = null;
+                              _editingMessageIndex = null;
+                              _messageController.clear();
+                            });
+                          },
+                          child: Row(
+                        children: const [
+                          Icon(Symbols.edit, size: 24, fill: 1, color: Color(0xFF5A6CEA)),
+                          SizedBox(width: 4),
+                          Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
+                        ],
+                      ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      SizedBox(
+                        height: 40,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFE8F0FE),
+                            foregroundColor: Color(0xFF5A6CEA),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Pretendard',
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                            minimumSize: const Size(0, 40),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isResearchActive = false;
+                            });
+                          },
+                          child: Row(
+                            children: const [
+                              Icon(Symbols.language, size: 24, color: Color(0xFF5A6CEA)),
+                              SizedBox(width: 4),
+                              Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (_isEditing) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFE8F0FE),
+                        foregroundColor: Color(0xFF5A6CEA),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Pretendard',
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        minimumSize: const Size(0, 40),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _editingMessage = null;
+                          _editingMessageIndex = null;
+                          _messageController.clear();
+                        });
+                      },
+                      child: Row(
+                        children: const [
+                          Icon(Symbols.edit, size: 24, fill: 1, color: Color(0xFF5A6CEA)),
+                          SizedBox(width: 4),
+                          Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ] else if (_isResearchActive) ...[
                   const SizedBox(width: 8),
                   SizedBox(
                     height: 40,

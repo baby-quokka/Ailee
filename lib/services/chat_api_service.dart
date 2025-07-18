@@ -154,6 +154,49 @@ class ChatApiService {
     throw ApiException('최대 재시도 횟수를 초과했습니다.', 0);
   }
 
+  // PUT 요청 헬퍼
+  Future<Map<String, dynamic>> _put(String endpoint, Map<String, dynamic> data) async {
+    try {
+      final response = await _getClient
+          .put(
+            Uri.parse('${ApiConfig.baseUrl}$endpoint'),
+            headers: _headers,
+            body: json.encode(data),
+          )
+          .timeout(ApiConfig.timeout);
+      _handleError(response);
+      return json.decode(response.body);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('네트워크 오류가 발생했습니다: $e', 0);
+    }
+  }
+
+  // 메시지 수정 API
+  Future<void> editMessage({required int? sessionId, required String text, required int order, required bool isResearchActive, required List<XFile>? images}) async {
+    final data = {
+      'session_id': sessionId,
+      'user_input': text,
+      'order': order,
+      'is_search': isResearchActive,
+      'images': images,
+    };
+    print('=== editMessage 요청 ===');
+    print('요청 데이터:');
+    print(data);
+    try {
+      final response = await _put(
+        ApiConfig.chatSession,
+        data
+      );
+      print('editMessage 응답:');
+      print(response);
+    } catch (e) {
+      print('editMessage 에러: $e');
+      rethrow;
+    }
+  }
+
   // 서버 연결 상태 확인
   Future<bool> checkServerConnection() async {
     try {
@@ -180,20 +223,6 @@ class ChatApiService {
     final response = await _get<List<dynamic>>(
       '${ApiConfig.chatSession}$sessionId/',
     );
-
-    // 디버깅: 응답 원본 출력
-    print('=== getSessionMessages 응답 디버깅 ===');
-    print('서버 응답 원본: $response');
-    print('응답 타입:  [32m${response.runtimeType} [0m');
-    if (response is List) {
-      for (var item in response) {
-        print('item: $item');
-      }
-      if (response.isNotEmpty) {
-        print('첫 번째 메시지: ${response[0]}');
-      }
-    }
-    print('=== getSessionMessages 디버깅 끝 ===');
 
     return response.map((json) => ChatMessage.fromJson(json)).toList();
   }
