@@ -226,6 +226,8 @@ class ChatApiService {
         images: images,
       );
     }
+
+    // audios
     
     // 이미지가 없는 경우 기존 방식 사용
     final data = <String, dynamic>{

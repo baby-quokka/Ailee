@@ -39,11 +39,103 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isResearchActive = false;
   final ImagePicker _picker = ImagePicker();
   List<XFile> _selectedImages = [];
+  ChatMessage? _selectedMessage;
+  int? _expandedMessageIndex; // index 기반으로 변경
+  OverlayEntry? _editOptionsOverlay;
+  final ScrollController _scrollController = ScrollController();
+  int _lastMessageCount = 0; // 이전 메시지 개수 추적
+
+  void _showEditOptions(BuildContext context, Offset position, ChatMessage message, int index, VoidCallback onEdit) {
+    _removeEditOptions();
+    final overlay = Overlay.of(context);
+    
+    _selectedMessage = message;
+    _expandedMessageIndex = index;
+    
+    _editOptionsOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        left: position.dx - 60,
+        top: position.dy + 20,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[800],
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildEditOption('복사', Icons.copy, () {
+                Clipboard.setData(ClipboardData(text: message.message));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('메시지가 복사되었습니다.')),
+                );
+                _removeEditOptions();
+              }),
+              _buildEditOption('편집', Icons.edit, () {
+                onEdit();
+                _removeEditOptions();
+              }),
+              _buildEditOption('공유', Icons.share, () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('공유 기능을 구현하세요.')),
+                );
+                _removeEditOptions();
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_editOptionsOverlay!);
+  }
+
+  Widget _buildEditOption(String text, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Pretendard',
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(icon, color: Colors.white, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _removeEditOptions() {
+    _editOptionsOverlay?.remove();
+    _editOptionsOverlay = null;
+    _selectedMessage = null;
+    setState(() {
+      _expandedMessageIndex = null;
+    });
+  }
 
   @override
   void dispose() {
+    _removeEditOptions();
     _messageController.dispose();
     _workflowInputController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -575,128 +667,171 @@ class _ChatScreenState extends State<ChatScreen> {
     final isLoading = chatProvider.isLoading;
 
     // ScrollController 추가
-    final ScrollController scrollController = ScrollController();
+    // final ScrollController scrollController = ScrollController(); // This line is removed
 
     // 메시지가 추가되면 자동으로 최하단으로 스크롤
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (scrollController.hasClients) {
-        scrollController.animateTo(
-          scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+      if (chatProvider.currentSession?.messages.length != _lastMessageCount) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+        _lastMessageCount = chatProvider.currentSession?.messages.length ?? 0;
       }
     });
 
-    return Scrollbar(
-      controller: scrollController,
-      thickness: 4, // 스크롤바 두께
-      radius: const Radius.circular(2), // 스크롤바 모서리 둥글기
-      child: ListView.builder(
-        controller: scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: messages.length + (isLoading ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (isLoading && index == messages.length) {
-            return _buildLoadingIndicator();
-          }
-          final msg = messages[index];
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent, // 빈 공간도 인식
+      onTap: () {
+        if (_editOptionsOverlay != null) {
+          _removeEditOptions();
+        }
+      },
+      child: Scrollbar(
+        controller: _scrollController,
+        thickness: 4, // 스크롤바 두께
+        radius: const Radius.circular(2), // 스크롤바 모서리 둥글기
+        child: ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          itemCount: messages.length + (isLoading ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (isLoading && index == messages.length) {
+              return _buildLoadingIndicator();
+            }
+            final msg = messages[index];
 
-          if (msg.isUser) {
-            // 사용자 메시지 - 기존 박스 스타일 유지
-            return Align(
-              alignment: Alignment.centerRight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (msg.localImagePaths != null && msg.localImagePaths!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: SizedBox(
-                        height: 80,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          shrinkWrap: true,
-                          children: msg.localImagePaths!.map((path) =>
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.file(
-                                  File(path),
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
+            if (msg.isUser) {
+              // 사용자 메시지 - AnimatedContainer로 확대 효과 추가
+              final isExpanded = _expandedMessageIndex == index;
+              
+              return GestureDetector(
+                onLongPressStart: (details) {
+                  setState(() {
+                    _expandedMessageIndex = index;
+                  });
+                  _showEditOptions(
+                    context,
+                    details.globalPosition,
+                    msg,
+                    index,
+                    () {
+                      // TODO: 수정 기능 구현 (예: 다이얼로그 띄우기 등)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('수정 기능을 구현하세요.')),
+                      );
+                    },
+                  );
+                },
+                onTap: _removeEditOptions,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (msg.localImagePaths != null && msg.localImagePaths!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: SizedBox(
+                            height: 80,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              shrinkWrap: true,
+                              children: msg.localImagePaths!.map((path) =>
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.file(
+                                      File(path),
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ).toList(),
                             ),
-                          ).toList(),
+                          ),
+                        ),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.all(12),
+                        transform: isExpanded ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: isExpanded ? [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ] : null,
+                        ),
+                        child: Text(
+                          msg.message,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black87,
+                            height: 1.4,
+                            fontFamily: 'Pretendard',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              // AI 답변 - 봇 이미지와 텍스트로 표시
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // AI 봇 이미지
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/emoji/man_3d_light.png',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      msg.message,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                        height: 1.4,
-                        fontFamily: 'Pretendard',
+                    const SizedBox(width: 12),
+                    // AI 답변 텍스트
+                    Expanded(
+                      child: Text(
+                        msg.message,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          height: 1.4,
+                          fontFamily: 'Pretendard',
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            // AI 답변 - 봇 이미지와 텍스트로 표시
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // AI 봇 이미지
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        'assets/emoji/man_3d_light.png',
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // AI 답변 텍스트
-                  Expanded(
-                    child: Text(
-                      msg.message,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                        height: 1.4,
-                        fontFamily: 'Pretendard',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-        },
+                  ],
+                ),
+              );
+            }
+          },
+        ),
       ),
     );
   }

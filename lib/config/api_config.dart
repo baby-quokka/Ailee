@@ -17,6 +17,9 @@ class ApiConfig {
       '/chat/users/'; // /chat/users/{user_id}/sessions/
   static const String chatSession =
       '/chat/sessions/'; // /chat/sessions/{session_id}/
+  static const String chatAudio = 
+      '/call/session/'; // /call/
+
 
   // 헤더 설정
   static const Map<String, String> defaultHeaders = {
