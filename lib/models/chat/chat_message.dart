@@ -69,9 +69,7 @@ class ChatMessage {
   /// 서버 이미지 URL 리스트를 반환하는 getter
   List<String> get serverImageUrls {
     if (images == null) return [];
-    final urls = images!.map((image) => image['image'] as String).toList();
-    print('Server image URLs: $urls'); // 디버깅용
-    return urls;
+    return images!.map((image) => image['image'] as String).toList();
   }
 
   /// 서버 파일 URL 리스트를 반환하는 getter

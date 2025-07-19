@@ -295,6 +295,9 @@ class ChatApiService {
     List<XFile>? images,
     List<PlatformFile>? files,
   }) async {
+    // files 파라미터를 안전하게 복사
+    final List<PlatformFile>? safeFiles = files != null ? List<PlatformFile>.from(files) : null;
+    
     try {
       final request = http.MultipartRequest(
         'POST',
@@ -382,8 +385,8 @@ class ChatApiService {
       }
       
       // files가 있으면 파일도 첨부
-      if (files != null && files.isNotEmpty) {
-        final List<PlatformFile> filesCopy = List<PlatformFile>.from(files);
+      if (safeFiles != null && safeFiles.isNotEmpty) {
+        final List<PlatformFile> filesCopy = List<PlatformFile>.from(safeFiles);
         for (final file in filesCopy) {
           if (file.path == null) continue;
           final fileObj = File(file.path!);
@@ -435,9 +438,9 @@ class ChatApiService {
           );
         }
       }
-      // 업로드할 파일이 없으면 에러
+      // 업로드할 파일이 없으면 에러 (이미지나 파일 중 하나라도 있어야 함)
       if (request.files.isEmpty) {
-        throw ApiException('처리할 수 있는 유효한 이미지 파일이 없습니다.', 0);
+        throw ApiException('처리할 수 있는 유효한 이미지나 파일이 없습니다.', 0);
       }
 
       final streamedResponse = await request.send().timeout(ApiConfig.timeout);
