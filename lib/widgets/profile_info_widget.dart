@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/chat_bot.dart';
+import '../models/chat/chat_bot.dart';
 import '../models/user.dart';
 
 class ProfileInfoWidget extends StatelessWidget {

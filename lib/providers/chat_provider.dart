@@ -58,17 +58,17 @@ class ChatProvider with ChangeNotifier {
     print('=== selectSession 디버깅 시작 ===');
     print('선택하려는 세션 ID: $sessionId');
     print('현재 세션 목록 수: ${_chatSessions.length}');
-    
+
     final session = _chatSessions.firstWhere(
       (session) => session.id == sessionId,
     );
-    
+
     print('찾은 세션 정보:');
     print('  ID: ${session.id}');
     print('  제목: ${session.displayTitle}');
     print('  메시지 수: ${session.messages.length}');
     print('  isWorkflow: ${session.isWorkflow}');
-    
+
     _currentSession = session;
     _currentBot = session.bot ?? _currentBot; // 세션의 챗봇으로 현재 챗봇 변경
     notifyListeners();
@@ -78,12 +78,14 @@ class ChatProvider with ChangeNotifier {
     if (sessionId == 0) {
       print('임시 세션(ID: 0)이므로 로컬 메시지를 사용합니다.');
     } else if (session.messages.isEmpty) {
-      print('서버에서 메시지를 로드합니다. (sessionId: $sessionId, messages.isEmpty: ${session.messages.isEmpty})');
+      print(
+        '서버에서 메시지를 로드합니다. (sessionId: $sessionId, messages.isEmpty: ${session.messages.isEmpty})',
+      );
       loadSessionMessages(sessionId);
     } else {
       print('로컬 메시지를 사용합니다. (메시지 수: ${session.messages.length})');
     }
-    
+
     print('=== selectSession 디버깅 완료 ===');
   }
 
@@ -143,7 +145,7 @@ class ChatProvider with ChangeNotifier {
     print('=== loadSessionMessages 디버깅 시작 ===');
     print('로드하려는 세션 ID: $sessionId');
     print('현재 세션 ID: ${_currentSession?.id}');
-    
+
     try {
       print('API 호출 시작...');
       final messages = await _chatApiService.getSessionMessages(sessionId);
@@ -169,18 +171,18 @@ class ChatProvider with ChangeNotifier {
       if (_currentSession != null && _currentSession!.id == sessionId) {
         print('현재 세션 업데이트 중...');
         print('업데이트 전 메시지 수: ${_currentSession!.messages.length}');
-        
+
         final updatedSession = _currentSession!.copyWith(
           messages: chatMessages,
           time: DateTime.now(),
         );
-        
+
         print('업데이트 후 메시지 수: ${updatedSession.messages.length}');
-        
+
         _updateSession(updatedSession);
         _currentSession = updatedSession;
         notifyListeners();
-        
+
         print('세션 업데이트 완료');
       } else {
         print('현재 세션을 찾을 수 없거나 세션 ID가 일치하지 않음');
@@ -190,12 +192,17 @@ class ChatProvider with ChangeNotifier {
       print('메시지 로드 오류: $e');
       print('에러 타입: ${e.runtimeType}');
     }
-    
+
     print('=== loadSessionMessages 디버깅 완료 ===');
   }
 
   /// 메시지를 전송하고 응답을 받는 메서드
-  Future<void> sendMessage(String content, {bool? isWorkflow, bool? isResearchActive, List<XFile>? images}) async {
+  Future<void> sendMessage(
+    String content, {
+    bool? isWorkflow,
+    bool? isResearchActive,
+    List<XFile>? images,
+  }) async {
     print('=== sendMessage 디버깅 시작 ===');
     print('전송할 메시지: "$content"');
     print('매개변수:');
@@ -212,7 +219,7 @@ class ChatProvider with ChangeNotifier {
     print('  currentBot: ${_currentBot.name} (ID: ${_currentBot.id})');
     print('  currentSession: ${_currentSession?.id ?? 'null'}');
     print('  isLoading: $_isLoading');
-    
+
     if (content.trim().isEmpty || _currentUserId == null) {
       print('조건 검사 실패:');
       print('  content.trim().isEmpty: ${content.trim().isEmpty}');
@@ -265,7 +272,8 @@ class ChatProvider with ChangeNotifier {
     print('  세션 ID: ${userMessage.sessionId}');
     print('  메시지: "${userMessage.message}"');
     print('  이미지 경로: ${userMessage.localImagePaths?.length ?? 0}개');
-    if (userMessage.localImagePaths != null && userMessage.localImagePaths!.isNotEmpty) {
+    if (userMessage.localImagePaths != null &&
+        userMessage.localImagePaths!.isNotEmpty) {
       for (int i = 0; i < userMessage.localImagePaths!.length; i++) {
         print('    이미지 ${i + 1}: ${userMessage.localImagePaths![i]}');
       }
@@ -290,14 +298,18 @@ class ChatProvider with ChangeNotifier {
     try {
       print('API 호출 시작...');
       print('API 호출 매개변수:');
-      print('  sessionId: ${_currentSession!.id == 0 ? null : _currentSession!.id}');
+      print(
+        '  sessionId: ${_currentSession!.id == 0 ? null : _currentSession!.id}',
+      );
       print('  userInput: "$content"');
       print('  userId: $_currentUserId');
-      print('  characterId: ${ChatSession.getCharacterIdFromBotId(_currentBot.id)}');
+      print(
+        '  characterId: ${ChatSession.getCharacterIdFromBotId(_currentBot.id)}',
+      );
       print('  isWorkflow: ${_currentSession!.isWorkflow}');
       print('  isResearchActive: ${isResearchActive ?? false}');
       print('  images: ${images?.length ?? 0}개');
-      
+
       final response = await _chatApiService.sendMessage(
         sessionId: _currentSession!.id == 0 ? null : _currentSession!.id,
         userInput: content,
@@ -307,7 +319,7 @@ class ChatProvider with ChangeNotifier {
         isResearchActive: isResearchActive ?? false,
         images: images,
       );
-      
+
       print('API 호출 성공!');
       print('응답 데이터:');
       print('  응답 타입: ${response.runtimeType}');
@@ -332,11 +344,15 @@ class ChatProvider with ChangeNotifier {
       // 워크플로우 응답 저장
       print('워크플로우 응답 처리 중...');
       print('  response[\'is_workflow\']: ${response['is_workflow']}');
-      print('  response[\'response\'] is List: ${response['response'] is List}');
+      print(
+        '  response[\'response\'] is List: ${response['response'] is List}',
+      );
       if (response['response'] is List) {
-        print('  response[\'response\'].length: ${response['response'].length}');
+        print(
+          '  response[\'response\'].length: ${response['response'].length}',
+        );
       }
-      
+
       if (response['is_workflow'] == true && response['response'] is List) {
         _workflowResponse = List<String>.from(response['response']);
         print('워크플로우 응답 저장됨 - 길이: ${_workflowResponse!.length}');
@@ -349,11 +365,11 @@ class ChatProvider with ChangeNotifier {
       print('세션 업데이트 처리 중...');
       print('  현재 세션 ID: ${_currentSession!.id}');
       print('  response[\'session_id\']: ${response['session_id']}');
-      
+
       if (_currentSession!.id == 0 && response['session_id'] != null) {
         final newSessionId = response['session_id'];
         final newIsWorkflow = response['is_workflow'] ?? false;
-        
+
         print('새 세션 ID 할당:');
         print('  이전 세션 ID: ${_currentSession!.id}');
         print('  새 세션 ID: $newSessionId');
@@ -378,7 +394,7 @@ class ChatProvider with ChangeNotifier {
         print('기존 세션 isWorkflow 업데이트:');
         print('  이전 isWorkflow: ${_currentSession!.isWorkflow}');
         print('  새 isWorkflow: $newIsWorkflow');
-        
+
         if (newIsWorkflow != _currentSession!.isWorkflow) {
           final updatedSessionWithWorkflow = _currentSession!.copyWith(
             isWorkflow: newIsWorkflow,
@@ -427,7 +443,7 @@ class ChatProvider with ChangeNotifier {
       print('에러 메시지: $e');
       print('에러 스택 트레이스:');
       print(e);
-      
+
       // 에러 발생 시 에러 메시지 추가
       print('에러 메시지 생성 중...');
       final errorMessage = ChatMessage(
@@ -438,7 +454,7 @@ class ChatProvider with ChangeNotifier {
         order: _currentSession!.messages.length,
       );
       print('에러 메시지 생성 완료: "${errorMessage.message}"');
-      
+
       final updatedSessionWithError = _currentSession!.copyWith(
         messages: [..._currentSession!.messages, errorMessage],
         time: DateTime.now(),
@@ -457,7 +473,6 @@ class ChatProvider with ChangeNotifier {
 
   /// 세션 정보를 업데이트하는 내부 메서드
   void _updateSession(ChatSession updatedSession) {
-    
     final index = _chatSessions.indexWhere(
       (session) => session.id == updatedSession.id,
     );

@@ -2,11 +2,12 @@ import 'package:ailee/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 import 'post_screen.dart';
-import 'dummy_post.dart';
 import 'create_post_screen.dart';
 import 'package:ailee/widgets/post_list.dart';
 import 'slab_detail_screen.dart';
+import 'package:ailee/providers/slab_provider.dart';
 
 const List<List<Color>> workflowGradients = [
   [Color(0xFF36D1C4), Color(0xFF1E90FF)],
@@ -35,6 +36,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+
+    // 포스트 목록 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SlabProvider>().loadAllPosts();
+    });
   }
 
   void _onScroll() {
@@ -68,130 +74,140 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 구독 라벨 표시 여부에 따라 자유 슬랩 포스트만 표시 - TODO: 추후 수정 예정
-    // 구독 슬랩 목록을 서버에서 받아온 후 -> allPosts.where((p) => mySubscribedSlabs.contains(p['slab'])).toList()
-    final posts =
-        widget.showSubscribeLabel
-            ? dummyPosts
-                .where((p) => p['slab'] == '자유' || p['slab'] == '심리')
-                .toList()
-            : dummyPosts;
-    return Scaffold(
-      body: NotificationListener<UserScrollNotification>(
-        onNotification: (notification) {
-          if (notification.direction == ScrollDirection.idle) {
-            final homeState =
-                context.findAncestorStateOfType<HomeScreenState>();
-            if (homeState == null) return false;
-            SchedulerBinding.instance.addPostFrameCallback((_) {
-              if (_bottomNavOffset < 0.5) {
-                homeState.setBottomNavOffset(0.0);
-              } else {
-                homeState.setBottomNavOffset(1.0);
+    return Consumer<SlabProvider>(
+      builder: (context, slabProvider, child) {
+        // 구독 라벨 표시 여부에 따라 포스트 필터링
+        List<Map<String, dynamic>> posts;
+
+        if (widget.showSubscribeLabel) {
+          // 구독한 슬랩의 포스트만 표시 (임시로 '자유', '심리' 슬랩만)
+          posts = slabProvider.getSubscribedPosts(['자유', '심리']);
+        } else {
+          // 전체 포스트 표시
+          posts = slabProvider.allPosts;
+        }
+
+        return Scaffold(
+          body: NotificationListener<UserScrollNotification>(
+            onNotification: (notification) {
+              if (notification.direction == ScrollDirection.idle) {
+                final homeState =
+                    context.findAncestorStateOfType<HomeScreenState>();
+                if (homeState == null) return false;
+                SchedulerBinding.instance.addPostFrameCallback((_) {
+                  if (_bottomNavOffset < 0.5) {
+                    homeState.setBottomNavOffset(0.0);
+                  } else {
+                    homeState.setBottomNavOffset(1.0);
+                  }
+                });
               }
-            });
-          }
-          return false;
-        },
-        child: PostListWidget(
-          posts: posts,
-          workflowGradients: workflowGradients,
-          showSlabName: true,
-          scrollController: _scrollController,
-          showFab: _showFab,
-          onFabTap: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        CreatePostScreen(),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  const begin = Offset(1.0, 0.0);
-                  const end = Offset.zero;
-                  const curve = Curves.ease;
-                  final tween = Tween(
-                    begin: begin,
-                    end: end,
-                  ).chain(CurveTween(curve: curve));
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-              ),
-            );
-          },
-          onPostTap: (post) {
-            final homeState =
-                context.findAncestorStateOfType<HomeScreenState>();
-            homeState?.setBottomNavOffset(0.0, immediate: true);
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        PostDetailScreen(post: post),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  const begin = Offset(1.0, 0.0);
-                  const end = Offset.zero;
-                  const curve = Curves.ease;
-                  final tween = Tween(
-                    begin: begin,
-                    end: end,
-                  ).chain(CurveTween(curve: curve));
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-              ),
-            );
-          },
-          onSlabNameTap: (slabName) {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, secondaryAnimation) =>
-                        SlabDetailScreen(
-                          slabName: slabName,
-                          allPosts: dummyPosts,
-                          onBack: () => Navigator.of(context).pop(),
-                        ),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  const begin = Offset(1.0, 0.0);
-                  const end = Offset.zero;
-                  const curve = Curves.ease;
-                  final tween = Tween(
-                    begin: begin,
-                    end: end,
-                  ).chain(CurveTween(curve: curve));
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ),
+              return false;
+            },
+            child:
+                slabProvider.isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : PostListWidget(
+                      posts: posts,
+                      workflowGradients: workflowGradients,
+                      showSlabName: true,
+                      scrollController: _scrollController,
+                      showFab: _showFab,
+                      onFabTap: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    CreatePostScreen(),
+                            transitionsBuilder: (
+                              context,
+                              animation,
+                              secondaryAnimation,
+                              child,
+                            ) {
+                              const begin = Offset(1.0, 0.0);
+                              const end = Offset.zero;
+                              const curve = Curves.ease;
+                              final tween = Tween(
+                                begin: begin,
+                                end: end,
+                              ).chain(CurveTween(curve: curve));
+                              return SlideTransition(
+                                position: animation.drive(tween),
+                                child: child,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      onPostTap: (post) {
+                        final homeState =
+                            context.findAncestorStateOfType<HomeScreenState>();
+                        homeState?.setBottomNavOffset(0.0, immediate: true);
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    PostDetailScreen(post: post),
+                            transitionsBuilder: (
+                              context,
+                              animation,
+                              secondaryAnimation,
+                              child,
+                            ) {
+                              const begin = Offset(1.0, 0.0);
+                              const end = Offset.zero;
+                              const curve = Curves.ease;
+                              final tween = Tween(
+                                begin: begin,
+                                end: end,
+                              ).chain(CurveTween(curve: curve));
+                              return SlideTransition(
+                                position: animation.drive(tween),
+                                child: child,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      onSlabNameTap: (slabName) {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    SlabDetailScreen(
+                                      slabName: slabName,
+                                      allPosts: slabProvider.allPosts,
+                                      onBack: () => Navigator.of(context).pop(),
+                                    ),
+                            transitionsBuilder: (
+                              context,
+                              animation,
+                              secondaryAnimation,
+                              child,
+                            ) {
+                              const begin = Offset(1.0, 0.0);
+                              const end = Offset.zero;
+                              const curve = Curves.ease;
+                              final tween = Tween(
+                                begin: begin,
+                                end: end,
+                              ).chain(CurveTween(curve: curve));
+                              return SlideTransition(
+                                position: animation.drive(tween),
+                                child: child,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+          ),
+        );
+      },
     );
   }
 }

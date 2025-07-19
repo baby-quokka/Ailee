@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../providers/chat_provider.dart';
-import '../models/chat_message.dart';
-import '../models/chat_bot.dart';
+import '../models/chat/chat_message.dart';
+import '../models/chat/chat_bot.dart';
 import '../providers/auth_provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:image_picker/image_picker.dart';
@@ -49,7 +49,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
-    
+
     context.read<ChatProvider>().sendMessage(
       text,
       isResearchActive: _isResearchActive,
@@ -57,7 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     _messageController.clear();
     FocusScope.of(context).unfocus();
-    
+
     // 메시지 전송 후 이미지 초기화
     setState(() {
       _selectedImages.clear();
@@ -65,15 +65,15 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-
   void _showContentsScreen() {
     final bot = context.read<ChatProvider>().currentBot;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ContentsScreen(
-          bot: bot,
-          workflowInputController: _workflowInputController,
-        ),
+        builder:
+            (_) => ContentsScreen(
+              bot: bot,
+              workflowInputController: _workflowInputController,
+            ),
       ),
     );
   }
@@ -105,9 +105,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // prompt 버튼을 누른 직후에는 무조건 워크플로우 UI 진입
     final showWorkflow =
-        _forceWorkflow ||
-        (isWorkflow &&
-            workflowResponse != null);
+        _forceWorkflow || (isWorkflow && workflowResponse != null);
 
     // 워크플로우 진입 시 새로운 스크린 push
     if (showWorkflow && !_workflowScreenPushed) {
@@ -378,7 +376,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                     padding: const EdgeInsets.all(3),
-                                    child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -422,32 +424,48 @@ class _ChatScreenState extends State<ChatScreen> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.add, color: Colors.black, size: 22),
+                        icon: const Icon(
+                          Icons.add,
+                          color: Colors.black,
+                          size: 22,
+                        ),
                         onPressed: () {
                           showModalBottomSheet(
                             context: context,
                             backgroundColor: Colors.white,
                             shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(18),
+                              ),
                             ),
                             builder: (context) {
                               final width = MediaQuery.of(context).size.width;
                               return SizedBox(
                                 width: width,
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 60),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    16,
+                                    16,
+                                    60,
+                                  ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Center(
                                         child: Container(
                                           width: 40,
                                           height: 5,
-                                          margin: const EdgeInsets.only(bottom: 16),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 16,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: Colors.grey[300],
-                                            borderRadius: BorderRadius.circular(3),
+                                            borderRadius: BorderRadius.circular(
+                                              3,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -455,44 +473,101 @@ class _ChatScreenState extends State<ChatScreen> {
                                         onPressed: () {
                                           // 파일 선택 기능 구현
                                         },
-                                        icon: Icon(Icons.insert_drive_file, size: 28, color: Colors.black),
-                                        label: Text('  파일 추가', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600, fontFamily: 'Pretendard',)),
+                                        icon: Icon(
+                                          Icons.insert_drive_file,
+                                          size: 28,
+                                          color: Colors.black,
+                                        ),
+                                        label: Text(
+                                          '  파일 추가',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Pretendard',
+                                          ),
+                                        ),
                                         style: TextButton.styleFrom(
                                           alignment: Alignment.centerLeft,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
                                         ),
                                       ),
                                       TextButton.icon(
                                         onPressed: () async {
                                           // 사진첩에서 이미지 선택
-                                          final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                                          final XFile? image = await _picker
+                                              .pickImage(
+                                                source: ImageSource.gallery,
+                                              );
                                           if (image != null) {
                                             setState(() {
                                               _selectedImages.add(image);
                                             });
-                                            Navigator.pop(context); // 사진 선택 후 bottomsheet 닫기
+                                            Navigator.pop(
+                                              context,
+                                            ); // 사진 선택 후 bottomsheet 닫기
                                           }
                                         },
-                                        icon: Icon(Icons.photo, size: 28, color: Colors.black),
-                                        label: Text('  사진 추가', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600, fontFamily: 'Pretendard',)),
+                                        icon: Icon(
+                                          Icons.photo,
+                                          size: 28,
+                                          color: Colors.black,
+                                        ),
+                                        label: Text(
+                                          '  사진 추가',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Pretendard',
+                                          ),
+                                        ),
                                         style: TextButton.styleFrom(
                                           alignment: Alignment.centerLeft,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
                                         ),
                                       ),
                                       TextButton.icon(
                                         onPressed: () {
                                           // '웹에서 검색하기' 버튼 클릭 시
-                                         setState(() {
-                                          _isResearchActive = !_isResearchActive;
-                                         });
-                                         Navigator.pop(context);
+                                          setState(() {
+                                            _isResearchActive =
+                                                !_isResearchActive;
+                                          });
+                                          Navigator.pop(context);
                                         },
-                                        icon: Icon(Symbols.language, size: 28, color: _isResearchActive ? Color(0xFF5A6CEA) : Colors.black),
-                                        label: Text('  웹에서 검색하기', style: TextStyle(color: _isResearchActive ? Color(0xFF5A6CEA) : Colors.black, fontSize: 20, fontWeight: FontWeight.w600, fontFamily: 'Pretendard',)),
+                                        icon: Icon(
+                                          Symbols.language,
+                                          size: 28,
+                                          color:
+                                              _isResearchActive
+                                                  ? Color(0xFF5A6CEA)
+                                                  : Colors.black,
+                                        ),
+                                        label: Text(
+                                          '  웹에서 검색하기',
+                                          style: TextStyle(
+                                            color:
+                                                _isResearchActive
+                                                    ? Color(0xFF5A6CEA)
+                                                    : Colors.black,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Pretendard',
+                                          ),
+                                        ),
                                         style: TextButton.styleFrom(
                                           alignment: Alignment.centerLeft,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -526,7 +601,10 @@ class _ChatScreenState extends State<ChatScreen> {
                           fontWeight: FontWeight.w900,
                           fontFamily: 'Pretendard',
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 0,
+                        ),
                         minimumSize: const Size(0, 40),
                         elevation: 0,
                       ),
@@ -537,9 +615,17 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                       child: Row(
                         children: const [
-                          Icon(Symbols.language, size: 24, color: Color(0xFF5A6CEA)),
+                          Icon(
+                            Symbols.language,
+                            size: 24,
+                            color: Color(0xFF5A6CEA),
+                          ),
                           SizedBox(width: 4),
-                          Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
+                          Icon(
+                            Symbols.close,
+                            size: 18,
+                            color: Color(0xFF5A6CEA),
+                          ),
                         ],
                       ),
                     ),
@@ -556,7 +642,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                      ),
                       onPressed: () => _sendMessage(_messageController.text),
                       splashRadius: 24,
                     ),
@@ -609,7 +698,8 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (msg.localImagePaths != null && msg.localImagePaths!.isNotEmpty)
+                  if (msg.localImagePaths != null &&
+                      msg.localImagePaths!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: SizedBox(
@@ -617,20 +707,23 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: ListView(
                           scrollDirection: Axis.horizontal,
                           shrinkWrap: true,
-                          children: msg.localImagePaths!.map((path) =>
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.file(
-                                  File(path),
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                          ).toList(),
+                          children:
+                              msg.localImagePaths!
+                                  .map(
+                                    (path) => Padding(
+                                      padding: const EdgeInsets.only(left: 4),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.file(
+                                          File(path),
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
                         ),
                       ),
                     ),

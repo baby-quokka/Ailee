@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import '../config/api_config.dart';
-import '../models/chat_session.dart';
-import '../models/chat_message.dart';
+import '../models/chat/chat_session.dart';
+import '../models/chat/chat_message.dart';
 
 /// 백엔드 API와 통신하는 채팅 서비스 클래스
 class ChatApiService {
@@ -160,7 +160,7 @@ class ChatApiService {
       final response = await _getClient
           .get(Uri.parse('${ApiConfig.baseUrl}/user/1'), headers: _headers)
           .timeout(const Duration(seconds: 10));
-      
+
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -243,7 +243,7 @@ class ChatApiService {
     if (workflowId != null) {
       data['workflow_id'] = workflowId;
     }
-    
+
     final response = await _post<Map<String, dynamic>>(
       ApiConfig.chatSession,
       data,
