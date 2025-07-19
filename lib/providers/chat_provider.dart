@@ -13,10 +13,21 @@ class ChatProvider with ChangeNotifier {
   ChatBot _currentBot = ChatBot.bots[0]; // 현재 선택된 챗봇
   ChatSession? _currentSession; // 현재 열린 채팅 세션
   bool _isLoading = false; // 메시지 전송 중 여부
+  bool _isEditing = false; // 메시지 수정 중 여부
+  int? _editingMessageOrder; // 수정 중인 메시지의 order
   int? _currentUserId; // 현재 로그인한 사용자 ID
   List<String>? _workflowResponse;
   bool get isWorkflow => _currentSession?.isWorkflow ?? false;
   List<String>? get workflowResponse => _workflowResponse;
+  bool get isEditing => _isEditing;
+  int? get editingMessageOrder => _editingMessageOrder;
+  
+  // 수정 상태를 초기화하는 메서드
+  void clearEditingState() {
+    _isEditing = false;
+    _editingMessageOrder = null;
+    notifyListeners();
+  }
 
   // Getter 메서드들
   List<ChatSession> get chatSessions => _chatSessions;
@@ -148,17 +159,51 @@ class ChatProvider with ChangeNotifier {
   /// 메시지 전송 및 수정 통합 메서드
   Future<void> sendMessage(String content, {bool? isWorkflow, bool? isResearchActive, List<XFile>? images, List<PlatformFile>? files, bool isEdit = false, int? messageId, int? order}) async {
     if (isEdit && order != null) {
-      // 메시지 수정 모드: editMessage 호출
-      await _chatApiService.editMessage(
-        sessionId: _currentSession!.id == 0 ? null : _currentSession!.id,
-        isResearchActive: isResearchActive ?? false,
-        images: images,
-        text: content,
-        order: order,
-      );
-      // 수정 후 해당 세션의 메시지 전체 재조회
+      // 메시지 수정 모드: 수정 중인 메시지 아래의 기록 제거
+      _isEditing = true;
+      _editingMessageOrder = order;
+      notifyListeners();
+      
+      // 수정 중인 메시지 아래의 모든 메시지 제거
       if (_currentSession != null) {
-        await loadSessionMessages(_currentSession!.id);
+        final messages = _currentSession!.messages;
+        final editingIndex = messages.indexWhere((msg) => msg.order == order);
+        
+        if (editingIndex != -1) {
+          // 수정 중인 메시지까지만 유지하고 나머지는 제거
+          final updatedMessages = messages.take(editingIndex + 1).toList();
+          final updatedSession = _currentSession!.copyWith(
+            messages: updatedMessages,
+            time: DateTime.now(),
+          );
+          _updateSession(updatedSession);
+          _currentSession = updatedSession;
+          notifyListeners();
+        }
+      }
+      
+      // 로딩 상태 시작
+      _isLoading = true;
+      notifyListeners();
+      
+      try {
+        await _chatApiService.editMessage(
+          sessionId: _currentSession!.id == 0 ? null : _currentSession!.id,
+          isResearchActive: isResearchActive ?? false,
+          images: images,
+          text: content,
+          order: order,
+        );
+        // 수정 후 해당 세션의 메시지 전체 재조회
+        if (_currentSession != null) {
+          await loadSessionMessages(_currentSession!.id);
+        }
+      } finally {
+        // 수정 완료 후 상태 초기화
+        _isEditing = false;
+        _editingMessageOrder = null;
+        _isLoading = false;
+        notifyListeners();
       }
       return;
     }

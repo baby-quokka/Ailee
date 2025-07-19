@@ -234,6 +234,8 @@ class _ChatScreenState extends State<ChatScreen> {
           _editingMessageIndex = null;
           _messageController.clear();
         });
+        // 채팅 프로바이더의 수정 상태도 초기화
+        context.read<ChatProvider>().clearEditingState();
       }
       FocusScope.of(context).unfocus();
     }
@@ -516,6 +518,45 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_isEditing) ...[
+              SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFE8F0FE),
+                        foregroundColor: Color(0xFF5A6CEA),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Pretendard',
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        minimumSize: const Size(0, 40),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        if (mounted) {
+                          setState(() {
+                            _editingMessage = null;
+                            _editingMessageIndex = null;
+                            _messageController.clear();
+                          });
+                        }
+                      },
+                      //child: Text('수정 중...', style: TextStyle(color: Color(0xFF5A6CEA), fontSize: 16, fontWeight: FontWeight.w900, fontFamily: 'Pretendard'),),
+                      child: Row(
+                        children: const [
+                          Text('수정 중...', style: TextStyle(color: Color(0xFF5A6CEA), fontSize: 16, fontWeight: FontWeight.w900, fontFamily: 'Pretendard'),),
+                          Spacer(),
+                          Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
+                        ],
+                      ),
+                    ),
+                  ),
+            ],
             if (_selectedFiles.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -608,9 +649,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   vertical: 14,
                   horizontal: 0,
                 ),
-                hintText: "${bot.name}와 얘기해봐요",
+                hintText: _isEditing 
+                    ? "메시지를 수정하세요..." 
+                    : "${bot.name}와 얘기해봐요",
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey[500]),
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                hintStyle: TextStyle(
+                  color: _isEditing ? Colors.blue[500] : Colors.grey[500],
+                ),
               ),
             ),
             // 하단 + 버튼과 검색/수정 버튼
@@ -796,123 +843,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                 ),
-                // 검색 x 버튼 또는 편집(수정) 버튼
-                if (_isEditing && _isResearchActive) ...[
-                  const SizedBox(width: 8),
-                  Row(
-                    children: [
-                      SizedBox(
-                        height: 40,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFE8F0FE),
-                            foregroundColor: Color(0xFF5A6CEA),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            textStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Pretendard',
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                            minimumSize: const Size(0, 40),
-                            elevation: 0,
-                          ),
-                          onPressed: () {
-                            if (mounted) {
-                              setState(() {
-                                _editingMessage = null;
-                                _editingMessageIndex = null;
-                                _messageController.clear();
-                              });
-                            }
-                          },
-                          child: Row(
-                        children: const [
-                          Icon(Symbols.edit, size: 24, fill: 1, color: Color(0xFF5A6CEA)),
-                          SizedBox(width: 4),
-                          Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
-                        ],
-                      ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      SizedBox(
-                        height: 40,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFE8F0FE),
-                            foregroundColor: Color(0xFF5A6CEA),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            textStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Pretendard',
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                            minimumSize: const Size(0, 40),
-                            elevation: 0,
-                          ),
-                          onPressed: () {
-                            if (mounted) {
-                              setState(() {
-                                _isResearchActive = false;
-                              });
-                            }
-                          },
-                          child: Row(
-                            children: const [
-                              Icon(Symbols.language, size: 24, color: Color(0xFF5A6CEA)),
-                              SizedBox(width: 4),
-                              Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else if (_isEditing) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    height: 40,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFE8F0FE),
-                        foregroundColor: Color(0xFF5A6CEA),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Pretendard',
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                        minimumSize: const Size(0, 40),
-                        elevation: 0,
-                      ),
-                      onPressed: () {
-                        if (mounted) {
-                          setState(() {
-                            _editingMessage = null;
-                            _editingMessageIndex = null;
-                            _messageController.clear();
-                          });
-                        }
-                      },
-                      child: Row(
-                        children: const [
-                          Icon(Symbols.edit, size: 24, fill: 1, color: Color(0xFF5A6CEA)),
-                          SizedBox(width: 4),
-                          Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ] else if (_isResearchActive) ...[
+                if (_isResearchActive) ...[
                   const SizedBox(width: 8),
                   SizedBox(
                     height: 40,
@@ -968,7 +899,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_forward,
                         color: Colors.white,
                       ),
@@ -988,9 +919,20 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildChatList(List<ChatMessage> messages) {
     final chatProvider = context.watch<ChatProvider>();
     final isLoading = chatProvider.isLoading;
+    final isEditing = chatProvider.isEditing;
+    final editingMessageOrder = chatProvider.editingMessageOrder;
 
     // ScrollController 추가
     // final ScrollController scrollController = ScrollController(); // This line is removed
+
+    // 수정 중인 메시지 아래의 메시지들을 필터링
+    List<ChatMessage> filteredMessages = messages;
+    if (isEditing && editingMessageOrder != null) {
+      final editingIndex = messages.indexWhere((msg) => msg.order == editingMessageOrder);
+      if (editingIndex != -1) {
+        filteredMessages = messages.take(editingIndex + 1).toList();
+      }
+    }
 
     // 메시지가 추가되면 자동으로 최하단으로 스크롤
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1006,6 +948,27 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     });
 
+    // 수정 중일 때는 수정 중인 메시지로 스크롤
+    if (isEditing && editingMessageOrder != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          final editingIndex = filteredMessages.indexWhere((msg) => msg.order == editingMessageOrder);
+          if (editingIndex != -1) {
+            // 수정 중인 메시지가 보이도록 스크롤
+            final itemHeight = 100.0; // 대략적인 메시지 높이
+            final scrollOffset = editingIndex * itemHeight;
+            if (scrollOffset < _scrollController.position.maxScrollExtent) {
+              _scrollController.animateTo(
+                scrollOffset,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          }
+        }
+      });
+    }
+
     return GestureDetector(
       behavior: HitTestBehavior.translucent, // 빈 공간도 인식
       onTap: () {
@@ -1020,12 +983,19 @@ class _ChatScreenState extends State<ChatScreen> {
         child: ListView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          itemCount: messages.length + (isLoading ? 1 : 0),
+          itemCount: filteredMessages.length + (isLoading ? 1 : 0),
           itemBuilder: (context, index) {
-            if (isLoading && index == messages.length) {
+            if (isLoading && index == filteredMessages.length) {
+              // 수정 중일 때는 수정 중인 메시지 바로 아래에 로딩 인디케이터 표시
+              if (isEditing && editingMessageOrder != null) {
+                return Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: _buildLoadingIndicator(),
+                );
+              }
               return _buildLoadingIndicator();
             }
-            final msg = messages[index];
+            final msg = filteredMessages[index];
 
             if (msg.isUser) {
               // 사용자 메시지 - AnimatedContainer로 확대 효과 추가
@@ -1226,8 +1196,13 @@ class _ChatScreenState extends State<ChatScreen> {
                         padding: const EdgeInsets.all(12),
                         transform: isExpanded ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: isEditing && editingMessageOrder == msg.order 
+                              ? Colors.blue[50] 
+                              : Colors.grey[100],
                           borderRadius: BorderRadius.circular(12),
+                          border: isEditing && editingMessageOrder == msg.order
+                              ? Border.all(color: Colors.blue[300]!, width: 2)
+                              : null,
                           boxShadow: isExpanded ? [
                             BoxShadow(
                               color: Colors.black26,
@@ -1236,13 +1211,30 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           ] : null,
                         ),
-                        child: _buildFormattedText(
-                          msg.message,
-                          const TextStyle(
-                            fontSize: 16,
-                            color: Colors.black87,
-                            height: 1.4,
-                            fontFamily: 'Pretendard',
+                        child: IntrinsicWidth(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: _buildFormattedText(
+                                  msg.message,
+                                  const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                    height: 1.4,
+                                    fontFamily: 'Pretendard',
+                                  ),
+                                ),
+                              ),
+                              if (isEditing && editingMessageOrder == msg.order) ...[
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.edit,
+                                  size: 16,
+                                  color: Colors.blue,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
