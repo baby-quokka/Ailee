@@ -1,29 +1,10 @@
 import 'package:ailee/screens/slab/slab_detail_screen.dart';
+import 'package:ailee/screens/slab/slab_search_screen.dart';
 import 'package:flutter/material.dart';
-import 'slab_search_screen.dart';
-import 'package:ailee/screens/slab/top_slab_list_screen.dart';
 import 'package:ailee/screens/home_screen.dart';
-import 'dummy_post.dart';
-
-// 슬랩 임시 모델
-class Slab {
-  final String emoji;
-  final String title;
-  final String desc;
-  final int postCount;
-  final int memberCount;
-  final bool isSecret;
-  final bool isSubscribed;
-  Slab({
-    required this.emoji,
-    required this.title,
-    required this.desc,
-    required this.postCount,
-    required this.memberCount,
-    required this.isSecret,
-    required this.isSubscribed,
-  });
-}
+import 'package:ailee/models/slab/slab.dart';
+import 'package:ailee/providers/slab_provider.dart';
+import 'package:provider/provider.dart';
 
 class SlabInfoScreen extends StatefulWidget {
   const SlabInfoScreen({super.key});
@@ -33,140 +14,8 @@ class SlabInfoScreen extends StatefulWidget {
 }
 
 class _SlabInfoScreenState extends State<SlabInfoScreen> {
-  // 전체 슬랩 더미 데이터 12개 (isSubscribed는 나중에 user로 대체)
-  final List<Slab> allSlabs = [
-    Slab(
-      emoji: '🗽',
-      title: '자유',
-      desc: '자유롭게 이야기하는 공간',
-      postCount: 140,
-      memberCount: 600,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '💼',
-      title: '진로',
-      desc: '진로 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 130,
-      memberCount: 500,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '🔥',
-      title: '학업',
-      desc: '학업 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 120,
-      memberCount: 340,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '💖',
-      title: '연애',
-      desc: '연애 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 98,
-      memberCount: 210,
-      isSecret: false,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '🤔',
-      title: '취미/모임',
-      desc: '취미, 소모임, 동호회',
-      postCount: 75,
-      memberCount: 180,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '👥',
-      title: '인간관계',
-      desc: '인간관계 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 60,
-      memberCount: 150,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '🍔',
-      title: '맛집',
-      desc: '맛집 추천, 음식 이야기',
-      postCount: 55,
-      memberCount: 100,
-      isSecret: true,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '🧠',
-      title: '심리',
-      desc: '심리 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 50,
-      memberCount: 80,
-      isSecret: false,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '💬',
-      title: '소통',
-      desc: '소통 관련 질문, 고민, 꿀팁 나눔',
-      postCount: 45,
-      memberCount: 120,
-      isSecret: false,
-      isSubscribed: false,
-    ),
-    Slab(
-      emoji: '🎮',
-      title: '게임',
-      desc: '게임 정보, 친구 구함',
-      postCount: 40,
-      memberCount: 90,
-      isSecret: true,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '🏋️',
-      title: '운동',
-      desc: '운동, 건강, 다이어트',
-      postCount: 35,
-      memberCount: 70,
-      isSecret: false,
-      isSubscribed: true,
-    ),
-    Slab(
-      emoji: '🎵',
-      title: '음악',
-      desc: '음악 추천, 공연 정보',
-      postCount: 25,
-      memberCount: 60,
-      isSecret: true,
-      isSubscribed: false,
-    ),
-  ];
-
   bool excludeSubscribed = false;
   bool showSecret = false;
-
-  // Top 5 슬랩: isSecret과 isSubscribed가 false인 슬랩 중 postCount 내림차순 상위 5개
-  List<Slab> get topSlabs {
-    List<Slab> filtered = allSlabs.where((s) => !s.isSecret).toList();
-    if (excludeSubscribed) {
-      filtered = filtered.where((s) => !s.isSubscribed).toList();
-    }
-    filtered.sort((a, b) => b.postCount.compareTo(a.postCount));
-    return filtered.take(5).toList();
-  }
-
-  // MY슬랩 - 공개
-  List<Slab> get mySlabs {
-    return allSlabs.where((s) => s.isSubscribed && !s.isSecret).toList();
-  }
-
-  // MY슬랩 - 비공개
-  List<Slab> get mySecretSlabs {
-    return allSlabs.where((s) => s.isSubscribed && s.isSecret).toList();
-  }
 
   @override
   void initState() {
@@ -175,197 +24,223 @@ class _SlabInfoScreenState extends State<SlabInfoScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final homeState = context.findAncestorStateOfType<HomeScreenState>();
       homeState?.setBottomNavOffset(1.0);
+      // 슬랩 데이터와 포스트 데이터 불러오기
+      final slabProvider = Provider.of<SlabProvider>(context, listen: false);
+      slabProvider.loadSlabs();
+      slabProvider.loadAllPosts();
     });
   }
 
+  List<Slab> get topSlabs {
+    final slabs = Provider.of<SlabProvider>(context).slabs;
+    // 비공개 제외, 구독 제외 옵션 적용
+    List<Slab> filtered =
+        slabs
+            .where(
+              (s) =>
+                  (s.imoji != null && s.imoji != "") &&
+                  !(s.description?.contains("비공개") ?? false),
+            )
+            .toList();
+    if (excludeSubscribed) {
+      // slabs에 isSubscribed가 없으므로, 추후 사용자 정보와 매칭 필요
+    }
+    // postCount가 slabs에 없으므로, 임시로 users 수로 정렬
+    filtered.sort((a, b) => (b.users.length).compareTo(a.users.length));
+    return filtered.take(5).toList();
+  }
+
+  // **************************************************************************************
+  // **************************************************************************************
+  // 백엔드에서 비공개 구현 없기 때문에 임시 대책
+  List<Slab> get mySlabs {
+    final slabs = Provider.of<SlabProvider>(context).slabs;
+    // slabs에 isSubscribed, isSecret이 없으므로, 임시로 users에 현재 유저가 포함된 공개 슬랩만
+    // TODO:실제 구현 시 사용자 정보 필요
+    return slabs
+        .where((s) => !(s.description?.contains("비공개") ?? false))
+        .toList();
+  }
+
+  List<Slab> get mySecretSlabs {
+    final slabs = Provider.of<SlabProvider>(context).slabs;
+    // TODO:slabs에 isSecret이 없으므로, description에 "비공개" 포함된 것으로 임시 분류
+    return slabs
+        .where((s) => (s.description?.contains("비공개") ?? false))
+        .toList();
+  }
+  // **************************************************************************************
+  // **************************************************************************************
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 검색창+여백 흰색 배경
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: _buildSearchBar(),
-            ),
-            // 검색창 아래에 추가
-            Container(
-              height: 36,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white, // 위쪽 완전 흰색
-                    Color(0xFFF8F9FA), // 중간 단계 (연회색, grey[50]와 비슷)
-                    Color(0xFFF8F9FA), // 아래쪽 연회색
-                  ],
-                  stops: [0.0, 0.7, 1.0],
+    return Consumer<SlabProvider>(
+      builder: (context, slabProvider, child) {
+        if (slabProvider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return Scaffold(
+          backgroundColor: Colors.grey[50],
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 검색창+여백 흰색 배경
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _buildSearchBar(),
                 ),
-              ),
-            ),
-            // 나머지 전체 패딩
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 2. 인기 슬랩
-                  const Text(
-                    '인기 슬랩',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  const SizedBox(height: 12),
-                  // 텍스트 위주 간단 리스트
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  TopSlabListScreen(
-                                    slabs: allSlabs,
-                                    allPosts: dummyPosts,
-                                  ),
-                          transitionsBuilder: (
-                            context,
-                            animation,
-                            secondaryAnimation,
-                            child,
-                          ) {
-                            const begin = Offset(1.0, 0.0); // 오른쪽에서 시작
-                            const end = Offset.zero;
-                            const curve = Curves.ease;
-                            final tween = Tween(
-                              begin: begin,
-                              end: end,
-                            ).chain(CurveTween(curve: curve));
-                            return SlideTransition(
-                              position: animation.drive(tween),
-                              child: child,
-                            );
-                          },
-                        ),
-                      );
-                    },
-                    child: Card(
-                      color: Colors.white,
-                      elevation: 0.1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children:
-                              topSlabs
-                                  .map(
-                                    (slab) => Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 4,
-                                        horizontal: 8,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            '${topSlabs.indexOf(slab) + 1}.  ',
-                                            style: const TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${slab.emoji} ',
-                                            style: const TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${slab.title} ',
-                                            style: const TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 16,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              '- ${slab.desc}',
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                        ),
-                      ),
+                // 검색창 아래에 추가
+                Container(
+                  height: 36,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white, // 위쪽 완전 흰색
+                        Color(0xFFF8F9FA), // 중간 단계 (연회색, grey[50]와 비슷)
+                        Color(0xFFF8F9FA), // 아래쪽 연회색
+                      ],
+                      stops: [0.0, 0.7, 1.0],
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  // 3. MY슬랩 + 비공개 체크박스
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+                // 나머지 전체 패딩
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // 2. 인기 슬랩
                       const Text(
-                        'MY슬랩',
+                        '인기 슬랩',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      // 텍스트 위주 간단 리스트
+                      Card(
+                        color: Colors.white,
+                        elevation: 0.1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children:
+                                topSlabs
+                                    .asMap()
+                                    .entries
+                                    .map(
+                                      (entry) => Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 4,
+                                          horizontal: 8,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              '${entry.key + 1}.  ',
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${entry.value.imoji ?? ''} ',
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${entry.value.name} ',
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 16,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Expanded(
+                                              child: Text(
+                                                '- ${entry.value.description ?? ''}',
+                                                style: const TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 12,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      // 3. MY슬랩 + 비공개 체크박스
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('비공개', style: TextStyle(fontSize: 14)),
-                          Checkbox(
-                            value: showSecret,
-                            onChanged: (val) {
-                              setState(() {
-                                showSecret = val ?? false;
-                              });
-                            },
-                            activeColor: Colors.blue,
+                          const Text(
+                            'MY슬랩',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              const Text('비공개', style: TextStyle(fontSize: 14)),
+                              Checkbox(
+                                value: showSecret,
+                                onChanged: (val) {
+                                  setState(() {
+                                    showSecret = val ?? false;
+                                  });
+                                },
+                                activeColor: Colors.blue,
+                              ),
+                            ],
                           ),
                         ],
                       ),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics:
+                            const NeverScrollableScrollPhysics(), // 스크롤 중복 방지
+                        itemCount:
+                            showSecret ? mySecretSlabs.length : mySlabs.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder:
+                            (context, idx) => SlabCard(
+                              slab:
+                                  showSecret
+                                      ? mySecretSlabs[idx]
+                                      : mySlabs[idx],
+                            ),
+                      ),
+                      const SizedBox(height: 12),
                     ],
                   ),
-                  // const SizedBox(height: 4),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(), // 스크롤 중복 방지
-                    itemCount:
-                        showSecret ? mySecretSlabs.length : mySlabs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder:
-                        (context, idx) => SlabCard(
-                          slab: showSecret ? mySecretSlabs[idx] : mySlabs[idx],
-                          allPosts: dummyPosts,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -395,21 +270,28 @@ class _SlabInfoScreenState extends State<SlabInfoScreen> {
 
 class SlabCard extends StatelessWidget {
   final Slab slab;
-  final List<Map<String, dynamic>> allPosts;
-  const SlabCard({super.key, required this.slab, required this.allPosts});
+  const SlabCard({super.key, required this.slab});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        // 해당 슬랩의 포스트만 필터링
+        final slabPosts =
+            Provider.of<SlabProvider>(context, listen: false).allPosts
+                .where((post) => post['slab']['name'] == slab.name)
+                .toList();
+
         Navigator.push(
           context,
           PageRouteBuilder(
             pageBuilder:
                 (context, animation, secondaryAnimation) => SlabDetailScreen(
-                  slabName: slab.title,
-                  allPosts: allPosts,
-                  onBack: () => Navigator.of(context).pop(),
+                  slabName: slab.name,
+                  allPosts: slabPosts,
+                  onBack: () {
+                    Navigator.pop(context);
+                  },
                 ),
             transitionsBuilder: (
               context,
@@ -417,7 +299,7 @@ class SlabCard extends StatelessWidget {
               secondaryAnimation,
               child,
             ) {
-              const begin = Offset(1.0, 0.0); // 오른쪽에서 시작
+              const begin = Offset(1.0, 0.0);
               const end = Offset.zero;
               const curve = Curves.ease;
               final tween = Tween(
@@ -441,7 +323,7 @@ class SlabCard extends StatelessWidget {
           child: Row(
             children: [
               // 이모티콘
-              Text(slab.emoji, style: const TextStyle(fontSize: 32)),
+              Text(slab.imoji ?? '', style: const TextStyle(fontSize: 32)),
               const SizedBox(width: 16),
               // 제목/설명
               Expanded(
@@ -449,7 +331,7 @@ class SlabCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      slab.title,
+                      slab.name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -457,7 +339,7 @@ class SlabCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      slab.desc,
+                      slab.description ?? '',
                       style: const TextStyle(color: Colors.grey, fontSize: 13),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -475,7 +357,7 @@ class SlabCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.article, size: 16),
                       Text(
-                        '${slab.postCount}',
+                        '${slab.users.length}',
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],
@@ -485,7 +367,7 @@ class SlabCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.person, size: 16),
                       Text(
-                        '${slab.memberCount}',
+                        '${slab.users.length}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.grey,

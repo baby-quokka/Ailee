@@ -1,8 +1,9 @@
+import 'package:ailee/providers/slab_provider.dart';
 import 'package:flutter/material.dart';
 import 'community_screen.dart';
 import 'slab_info_screen.dart';
 import 'create_slab_screen.dart';
-import 'all_slab_list_screen.dart';
+import 'package:provider/provider.dart';
 
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
@@ -155,6 +156,79 @@ class _MainTabViewState extends State<_MainTabView> {
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class AllSlabListScreen extends StatefulWidget {
+  @override
+  State<AllSlabListScreen> createState() => _AllSlabListScreenState();
+}
+
+class _AllSlabListScreenState extends State<AllSlabListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 슬랩 목록 자동 로드
+    Future.microtask(
+      () => Provider.of<SlabProvider>(context, listen: false).loadSlabs(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: Builder(
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+              ),
+        ),
+        title: const Text('전체 슬랩 목록'),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CreateSlabScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Consumer<SlabProvider>(
+        builder: (context, slabProvider, child) {
+          final slabs = slabProvider.slabs;
+          if (slabs.isEmpty) {
+            return const Center(child: Text('슬랩이 없습니다.'));
+          }
+          return ListView.builder(
+            itemCount: slabs.length,
+            itemBuilder: (context, index) {
+              final slab = slabs[index];
+              return ListTile(
+                leading:
+                    (slab.imoji != null && slab.imoji!.isNotEmpty)
+                        ? Text(slab.imoji!, style: TextStyle(fontSize: 24))
+                        : Icon(Icons.layers),
+                title: Text(slab.name),
+                subtitle: Text(slab.description ?? ''),
+                onTap: () {
+                  // TODO: 슬랩 상세 화면으로 이동
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/chat_message.dart';
-import '../models/chat_bot.dart';
-import '../models/chat_session.dart';
+import '../models/chat/chat_message.dart';
+import '../models/chat/chat_bot.dart';
+import '../models/chat/chat_session.dart';
 import '../services/chat_api_service.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -276,7 +276,7 @@ class ChatProvider with ChangeNotifier {
       print('에러 메시지: $e');
       print('에러 스택 트레이스:');
       print(e);
-      
+
       // 에러 발생 시 에러 메시지 추가
       final errorMessage = ChatMessage(
         id: 0, // 임시 ID (백엔드에서 생성됨)
@@ -301,7 +301,6 @@ class ChatProvider with ChangeNotifier {
 
   /// 세션 정보를 업데이트하는 내부 메서드
   void _updateSession(ChatSession updatedSession) {
-    
     final index = _chatSessions.indexWhere(
       (session) => session.id == updatedSession.id,
     );
