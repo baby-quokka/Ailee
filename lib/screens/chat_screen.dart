@@ -1099,9 +1099,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           ] : null,
                         ),
-                        child: Text(
+                        child: _buildFormattedText(
                           msg.message,
-                          style: const TextStyle(
+                          const TextStyle(
                             fontSize: 16,
                             color: Colors.black87,
                             height: 1.4,
@@ -1141,9 +1141,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 12),
                     // AI 답변 텍스트
                     Expanded(
-                      child: Text(
+                      child: _buildFormattedText(
                         msg.message,
-                        style: const TextStyle(
+                        const TextStyle(
                           fontSize: 16,
                           color: Colors.black87,
                           height: 1.4,
@@ -1158,6 +1158,49 @@ class _ChatScreenState extends State<ChatScreen> {
           },
         ),
       ),
+    );
+  }
+
+  // 볼드 처리를 위한 텍스트 포맷팅 위젯
+  Widget _buildFormattedText(String text, TextStyle baseStyle) {
+    final List<TextSpan> spans = [];
+    final RegExp boldPattern = RegExp(r'\*\*(.*?)\*\*');
+    
+    int lastIndex = 0;
+    
+    for (final Match match in boldPattern.allMatches(text)) {
+      // 볼드 처리되지 않은 텍스트 추가
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, match.start),
+          style: baseStyle,
+        ));
+      }
+      
+      // 볼드 처리된 텍스트 추가
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: baseStyle.copyWith(fontWeight: FontWeight.bold),
+      ));
+      
+      lastIndex = match.end;
+    }
+    
+    // 마지막 부분의 일반 텍스트 추가
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: baseStyle,
+      ));
+    }
+    
+    // 볼드 패턴이 없는 경우 원본 텍스트 반환
+    if (spans.isEmpty) {
+      return Text(text, style: baseStyle);
+    }
+    
+    return RichText(
+      text: TextSpan(children: spans),
     );
   }
 
