@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../config/api_config.dart';
 import '../models/chat_session.dart';
 import '../models/chat_message.dart';
+import 'package:file_picker/file_picker.dart';
 
 /// 백엔드 API와 통신하는 채팅 서비스 클래스
 class ChatApiService {
@@ -224,6 +225,8 @@ class ChatApiService {
       '${ApiConfig.chatSession}$sessionId/',
     );
 
+    print('getSessionMessages 응답:');
+    print(response);
     return response.map((json) => ChatMessage.fromJson(json)).toList();
   }
 
@@ -237,13 +240,14 @@ class ChatApiService {
     bool isWorkflow = false,
     bool isResearchActive = false,
     List<XFile>? images,
+    List<PlatformFile>? files,
   }) async {
     if (userInput == 'start!') {
       isWorkflow = true;
     }
     
     // multipart/form-data를 사용해서 이미지 파일들을 직접 전송
-    if (images != null && images.isNotEmpty) {
+    if ((images != null && images.isNotEmpty) || (files != null && files.isNotEmpty)) {
       return await _sendMessageWithImages(
         sessionId: sessionId,
         workflowId: workflowId,
@@ -253,6 +257,7 @@ class ChatApiService {
         isWorkflow: isWorkflow,
         isResearchActive: isResearchActive,
         images: images,
+        files: files,
       );
     }
 
@@ -274,7 +279,7 @@ class ChatApiService {
     if (workflowId != null) {
       data['workflow_id'] = workflowId;
     }
-    
+    print(data);
     final response = await _post<Map<String, dynamic>>(
       ApiConfig.chatSession,
       data,
@@ -297,12 +302,19 @@ class ChatApiService {
     required int characterId,
     bool isWorkflow = false,
     bool isResearchActive = false,
-    required List<XFile> images,
+    List<XFile>? images,
+    List<PlatformFile>? files,
   }) async {
-    // 이미지 파일 유효성 검사
-    if (images.isEmpty) {
-      throw ApiException('이미지 파일이 없습니다.', 0);
-    }
+    // 디버깅: 함수 진입 및 파라미터 출력
+    print('[_sendMessageWithImages] 호출됨');
+    print('  userInput: $userInput');
+    print('  userId: $userId, characterId: $characterId');
+    print('  isWorkflow: $isWorkflow, isResearchActive: $isResearchActive');
+    if (images != null) print('  images: ${images.length}개');
+    if (files != null) print('  files: ${files.length}개');
+    if (sessionId != null) print('  sessionId: $sessionId');
+    if (workflowId != null) print('  workflowId: $workflowId');
+    
     
     try {
       final request = http.MultipartRequest(
@@ -329,73 +341,125 @@ class ChatApiService {
         request.fields['workflow_id'] = workflowId.toString();
       }
 
-      final List<XFile> imagesCopy = List<XFile>.from(images);
-      final int originalLength = images.length;
       // 이미지 파일들 추가
-      for (int i = 0; i < originalLength; i++) {
-        final image = imagesCopy[i];
-        
-        // 파일 존재 확인
-        final file = File(image.path);
-        if (!await file.exists()) {
-          continue;
+      if (images != null && images.isNotEmpty) {
+        final List<XFile> imagesCopy = List<XFile>.from(images);
+        final int originalLength = imagesCopy.length;
+        for (int i = 0; i < originalLength; i++) {
+          final image = imagesCopy[i];
+          // 파일 존재 확인
+          final file = File(image.path);
+          if (!await file.exists()) {
+            continue;
+          }
+          // 파일 크기 확인
+          final fileSize = await file.length();
+          if (fileSize == 0) {
+            continue;
+          }
+          // 이미지 파일 읽기
+          List<int> imageBytes;
+          try {
+            imageBytes = await image.readAsBytes();
+          } catch (e) {
+            continue;
+          }
+          // 바이트 배열 유효성 검사
+          if (imageBytes.isEmpty) {
+            continue;
+          }
+          final fileName = image.name;
+          final fileExtension = fileName.split('.').isNotEmpty 
+              ? fileName.split('.').last.toLowerCase() 
+              : 'jpg';
+          String contentType;
+          switch (fileExtension) {
+            case 'jpg':
+            case 'jpeg':
+              contentType = 'image/jpeg';
+              break;
+            case 'png':
+              contentType = 'image/png';
+              break;
+            case 'gif':
+              contentType = 'image/gif';
+              break;
+            case 'webp':
+              contentType = 'image/webp';
+              break;
+            default:
+              contentType = 'image/jpeg'; // 기본값
+          }
+          final mediaType = MediaType.parse(contentType);
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'images',
+              imageBytes,
+              filename: fileName,
+              contentType: mediaType,
+            ),
+          );
         }
-        
-        // 파일 크기 확인
-        final fileSize = await file.length();
-        if (fileSize == 0) {
-          continue;
-        }
-        
-        // 이미지 파일 읽기
-        List<int> imageBytes;
-        try {
-          imageBytes = await image.readAsBytes();
-        } catch (e) {
-          continue;
-        }
-        
-        // 바이트 배열 유효성 검사
-        if (imageBytes.isEmpty) {
-          continue;
-        }
-        
-        final fileName = image.name;
-        final fileExtension = fileName.split('.').isNotEmpty 
-            ? fileName.split('.').last.toLowerCase() 
-            : 'jpg';
-
-        String contentType;
-        switch (fileExtension) {
-          case 'jpg':
-          case 'jpeg':
-            contentType = 'image/jpeg';
-            break;
-          case 'png':
-            contentType = 'image/png';
-            break;
-          case 'gif':
-            contentType = 'image/gif';
-            break;
-          case 'webp':
-            contentType = 'image/webp';
-            break;
-          default:
-            contentType = 'image/jpeg'; // 기본값
-        }
-
-        final mediaType = MediaType.parse(contentType);
-          
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'images',
-            imageBytes,
-            filename: fileName,
-            contentType: mediaType,
-          ),
-        );
       }
       
+      // files가 있으면 파일도 첨부
+      if (files != null && files.isNotEmpty) {
+        final List<PlatformFile> filesCopy = List<PlatformFile>.from(files);
+        for (final file in filesCopy) {
+          if (file.path == null) continue;
+          final fileObj = File(file.path!);
+          if (!await fileObj.exists()) continue;
+          final fileBytes = await fileObj.readAsBytes();
+          if (fileBytes.isEmpty) continue;
+          final fileName = file.name;
+          final fileExtension = fileName.split('.').isNotEmpty 
+              ? fileName.split('.').last.toLowerCase() 
+              : '';
+          String contentType;
+          switch (fileExtension) {
+            case 'pdf':
+              contentType = 'application/pdf';
+              break;
+            case 'txt':
+              contentType = 'text/plain';
+              break;
+            case 'doc':
+            case 'docx':
+              contentType = 'application/msword';
+              break;
+            case 'ppt':
+            case 'pptx':
+              contentType = 'application/vnd.ms-powerpoint';
+              break;
+            case 'xls':
+            case 'xlsx':
+              contentType = 'application/vnd.ms-excel';
+              break;
+            case 'jpg':
+            case 'jpeg':
+              contentType = 'image/jpeg';
+              break;
+            case 'png':
+              contentType = 'image/png';
+              break;
+            default:
+              contentType = 'application/octet-stream';
+          }
+          final mediaType = MediaType.parse(contentType);
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'files',
+              fileBytes,
+              filename: fileName,
+              contentType: mediaType,
+            ),
+          );
+        }
+      }
+      print('  request.files: ${request.files.length}개');
+      for (int i = 0; i < request.files.length; i++) {
+        print('    [${i}] ${request.files[i].field} - ${request.files[i].filename}');
+      }
       // 업로드할 파일이 없으면 에러
       if (request.files.isEmpty) {
         throw ApiException('처리할 수 있는 유효한 이미지 파일이 없습니다.', 0);
@@ -404,15 +468,17 @@ class ChatApiService {
       final streamedResponse = await request.send().timeout(ApiConfig.timeout);
       
       final response = await http.Response.fromStream(streamedResponse);
-      
+      print('  서버 응답 status: ${response.statusCode}');
+      print('  서버 응답 body: ${response.body}');
       // 응답 파싱
       Map<String, dynamic> responseData;
       try {
         responseData = json.decode(response.body) as Map<String, dynamic>;
       } catch (e) {
+        print('  [파싱 에러] $e');
         throw ApiException('서버 응답을 파싱할 수 없습니다: $e', response.statusCode);
       }
-
+      print('  파싱된 응답: $responseData');
       return {
         'response': responseData['response'],
         'session_id': responseData['session_id'],
@@ -420,6 +486,7 @@ class ChatApiService {
         'is_fa': responseData['is_fa'] ?? false,
       };
     } catch (e) {
+      print('[_sendMessageWithImages] 에러: $e');
       if (e is ApiException) rethrow;
       throw ApiException('이미지 업로드 중 오류가 발생했습니다: $e', 0);
     }

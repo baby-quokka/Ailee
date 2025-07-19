@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'workflow_screen.dart';
 import 'contents_screen.dart';
+import 'package:file_picker/file_picker.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -50,6 +51,8 @@ class _ChatScreenState extends State<ChatScreen> {
   int? _editingMessageIndex;
   bool get _isEditing => _editingMessage != null;
 
+  List<PlatformFile> _selectedFiles = [];
+
   void _showEditOptions(BuildContext context, Offset position, ChatMessage message, int index, VoidCallback onEdit) {
     _removeEditOptions();
     final overlay = Overlay.of(context);
@@ -84,12 +87,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 _removeEditOptions();
               }),
               _buildEditOption('편집', Icons.edit, () {
-                setState(() {
-                  _messageController.text = message.message;
-                  _editingMessage = message;
-                  _editingMessageIndex = index;
-                  _selectedImages.clear();
-                });
+                if (mounted) {
+                  setState(() {
+                    _messageController.text = message.message;
+                    _editingMessage = message;
+                    _editingMessageIndex = index;
+                    _selectedImages.clear();
+                  });
+                }
                 _removeEditOptions();
               }),
               _buildEditOption('공유', Icons.share, () {
@@ -135,9 +140,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _editOptionsOverlay?.remove();
     _editOptionsOverlay = null;
     _selectedMessage = null;
-    setState(() {
-      _expandedMessageIndex = null;
-    });
+    _expandedMessageIndex = null;
   }
 
   @override
@@ -162,15 +165,19 @@ class _ChatScreenState extends State<ChatScreen> {
       text,
       isResearchActive: _isResearchActive,
       images: _selectedImages.isNotEmpty ? _selectedImages : null,
+      files: _selectedFiles.isNotEmpty ? _selectedFiles : null,
     );
     _messageController.clear();
     FocusScope.of(context).unfocus();
     
-    // 메시지 전송 후 이미지 초기화
-    setState(() {
-      _selectedImages.clear();
-      _isResearchActive = false;
-    });
+    // 메시지 전송 후 이미지, 파일 초기화
+    if (mounted) {
+      setState(() {
+        _selectedImages.clear();
+        _selectedFiles.clear();
+        _isResearchActive = false;
+      });
+    }
   }
 
   // 메시지 수정 함수
@@ -185,11 +192,13 @@ class _ChatScreenState extends State<ChatScreen> {
         isEdit: true,
         order: _editingMessage!.order,
       );
-      setState(() {
-        _editingMessage = null;
-        _editingMessageIndex = null;
-        _messageController.clear();
-      });
+      if (mounted) {
+        setState(() {
+          _editingMessage = null;
+          _editingMessageIndex = null;
+          _messageController.clear();
+        });
+      }
       FocusScope.of(context).unfocus();
     }
   }
@@ -241,9 +250,11 @@ class _ChatScreenState extends State<ChatScreen> {
     // 워크플로우 진입 시 새로운 스크린 push
     if (showWorkflow && !_workflowScreenPushed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _workflowScreenPushed = true;
-        });
+        if (mounted) {
+          setState(() {
+            _workflowScreenPushed = true;
+          });
+        }
         Navigator.of(context)
             .push(
               MaterialPageRoute(
@@ -255,9 +266,11 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             )
             .then((_) {
-              setState(() {
-                _workflowScreenPushed = false;
-              });
+              if (mounted) {
+                setState(() {
+                  _workflowScreenPushed = false;
+                });
+              }
             });
       });
     }
@@ -469,6 +482,29 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_selectedFiles.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: _selectedFiles.map((file) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Chip(
+                        label: Text(file.name, style: const TextStyle(fontSize: 14)),
+                        onDeleted: () {
+                          if (mounted) {
+                            setState(() {
+                              _selectedFiles.remove(file);
+                            });
+                          }
+                        },
+                      ),
+                    )).toList(),
+                  ),
+                ),
+              ),
             if (_selectedImages.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 0),
@@ -497,9 +533,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                 right: 4,
                                 child: GestureDetector(
                                   onTap: () {
-                                    setState(() {
-                                      _selectedImages.removeAt(idx);
-                                    });
+                                    if (mounted) {
+                                      setState(() {
+                                        _selectedImages.removeAt(idx);
+                                      });
+                                    }
                                   },
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -581,8 +619,17 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                       ),
                                       TextButton.icon(
-                                        onPressed: () {
+                                        onPressed: () async {
                                           // 파일 선택 기능 구현
+                                          FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
+                                          if (result != null) {
+                                            if (mounted) {
+                                              setState(() {
+                                                _selectedFiles.addAll(result.files);
+                                              });
+                                            }
+                                            Navigator.pop(context);
+                                          }
                                         },
                                         icon: Icon(Icons.insert_drive_file, size: 28, color: Colors.black),
                                         label: Text('  파일 추가', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600, fontFamily: 'Pretendard',)),
@@ -596,9 +643,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                           // 사진첩에서 이미지 선택
                                           final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
                                           if (image != null) {
-                                            setState(() {
-                                              _selectedImages.add(image);
-                                            });
+                                            if (mounted) {
+                                              setState(() {
+                                                _selectedImages.add(image);
+                                              });
+                                            }
                                             Navigator.pop(context); // 사진 선택 후 bottomsheet 닫기
                                           }
                                         },
@@ -612,9 +661,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                       TextButton.icon(
                                         onPressed: () {
                                           // '웹에서 검색하기' 버튼 클릭 시
-                                         setState(() {
-                                          _isResearchActive = !_isResearchActive;
-                                         });
+                                         if (mounted) {
+                                           setState(() {
+                                             _isResearchActive = !_isResearchActive;
+                                           });
+                                         }
                                          Navigator.pop(context);
                                         },
                                         icon: Icon(Symbols.language, size: 28, color: _isResearchActive ? Color(0xFF5A6CEA) : Colors.black),
@@ -662,11 +713,13 @@ class _ChatScreenState extends State<ChatScreen> {
                             elevation: 0,
                           ),
                           onPressed: () {
-                            setState(() {
-                              _editingMessage = null;
-                              _editingMessageIndex = null;
-                              _messageController.clear();
-                            });
+                            if (mounted) {
+                              setState(() {
+                                _editingMessage = null;
+                                _editingMessageIndex = null;
+                                _messageController.clear();
+                              });
+                            }
                           },
                           child: Row(
                         children: const [
@@ -697,9 +750,11 @@ class _ChatScreenState extends State<ChatScreen> {
                             elevation: 0,
                           ),
                           onPressed: () {
-                            setState(() {
-                              _isResearchActive = false;
-                            });
+                            if (mounted) {
+                              setState(() {
+                                _isResearchActive = false;
+                              });
+                            }
                           },
                           child: Row(
                             children: const [
@@ -733,11 +788,13 @@ class _ChatScreenState extends State<ChatScreen> {
                         elevation: 0,
                       ),
                       onPressed: () {
-                        setState(() {
-                          _editingMessage = null;
-                          _editingMessageIndex = null;
-                          _messageController.clear();
-                        });
+                        if (mounted) {
+                          setState(() {
+                            _editingMessage = null;
+                            _editingMessageIndex = null;
+                            _messageController.clear();
+                          });
+                        }
                       },
                       child: Row(
                         children: const [
@@ -769,9 +826,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         elevation: 0,
                       ),
                       onPressed: () {
-                        setState(() {
-                          _isResearchActive = false;
-                        });
+                        if (mounted) {
+                          setState(() {
+                            _isResearchActive = false;
+                          });
+                        }
                       },
                       child: Row(
                         children: const [
@@ -856,9 +915,11 @@ class _ChatScreenState extends State<ChatScreen> {
               
               return GestureDetector(
                 onLongPressStart: (details) {
-                  setState(() {
-                    _expandedMessageIndex = index;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _expandedMessageIndex = index;
+                    });
+                  }
                   _showEditOptions(
                     context,
                     details.globalPosition,

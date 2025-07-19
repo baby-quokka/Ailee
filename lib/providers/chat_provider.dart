@@ -4,6 +4,7 @@ import '../models/chat_message.dart';
 import '../models/chat_bot.dart';
 import '../models/chat_session.dart';
 import '../services/chat_api_service.dart';
+import 'package:file_picker/file_picker.dart';
 
 /// 채팅 관련 상태를 관리하는 Provider 클래스
 class ChatProvider with ChangeNotifier {
@@ -142,7 +143,7 @@ class ChatProvider with ChangeNotifier {
   }
 
   /// 메시지 전송 및 수정 통합 메서드
-  Future<void> sendMessage(String content, {bool? isWorkflow, bool? isResearchActive, List<XFile>? images, bool isEdit = false, int? messageId, int? order}) async {
+  Future<void> sendMessage(String content, {bool? isWorkflow, bool? isResearchActive, List<XFile>? images, List<PlatformFile>? files, bool isEdit = false, int? messageId, int? order}) async {
     if (isEdit && order != null) {
       // 메시지 수정 모드: editMessage 호출
       await _chatApiService.editMessage(
@@ -210,6 +211,7 @@ class ChatProvider with ChangeNotifier {
         isWorkflow: _currentSession!.isWorkflow,
         isResearchActive: isResearchActive ?? false,
         images: images,
+        files: files,
       );
       
       // 워크플로우 응답 저장
