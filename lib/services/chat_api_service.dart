@@ -213,9 +213,13 @@ class ChatApiService {
 
   // 유저의 모든 채팅 세션 조회
   Future<List<ChatSession>> getUserSessions(int userId) async {
+    print('getUserSessions 호출');
+    print('userId: $userId');
     final response = await _get<List<dynamic>>(
       '${ApiConfig.chatSessions}$userId/sessions/',
     );
+    print('getUserSessions 응답:');
+    print(response);
     return response.map((json) => ChatSession.fromJson(json)).toList();
   }
 

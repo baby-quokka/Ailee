@@ -5,6 +5,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../providers/chat_provider.dart';
 import '../models/chat/chat_message.dart';
 import '../models/chat/chat_bot.dart';
+import '../models/chat/chat_session.dart';
 import '../providers/auth_provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,6 +25,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _workflowInputController =
       TextEditingController();
+  // 검색 기능을 위한 컨트롤러 추가
+  final TextEditingController _searchController = TextEditingController();
+  
   final List<String> samplePrompts = [
     '감정 조절 및 정서적 문제 해결',
     '의사결정 및 선택',
@@ -52,6 +56,10 @@ class _ChatScreenState extends State<ChatScreen> {
   bool get _isEditing => _editingMessage != null;
 
   List<PlatformFile> _selectedFiles = [];
+  
+  // 검색 관련 상태 변수 추가
+  String _searchQuery = '';
+  bool _isSearching = false;
 
   void _showEditOptions(BuildContext context, Offset position, ChatMessage message, int index, VoidCallback onEdit) {
     _removeEditOptions();
@@ -148,8 +156,35 @@ class _ChatScreenState extends State<ChatScreen> {
     _removeEditOptions();
     _messageController.dispose();
     _workflowInputController.dispose();
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // 검색 기능을 위한 메서드들
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query;
+      _isSearching = query.isNotEmpty;
+    });
+  }
+
+  void _clearSearch() {
+    setState(() {
+      _searchQuery = '';
+      _isSearching = false;
+      _searchController.clear();
+    });
+  }
+
+  List<ChatSession> _getFilteredSessions(List<ChatSession> sessions) {
+    if (_searchQuery.isEmpty) {
+      return sessions;
+    }
+    
+    return sessions.where((session) {
+      return session.summary.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
   }
 
   void _sendMessage(String text) {
@@ -1136,10 +1171,59 @@ class _ChatScreenState extends State<ChatScreen> {
             .toList()
           ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
+    // 검색된 세션들 필터링
+    final filteredSessions = _getFilteredSessions(sessions);
+
     return Drawer(
       backgroundColor: Colors.white,
       child: ListView(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.black),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                decoration: InputDecoration(
+                  hintText: '채팅 검색',
+                  hintStyle: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                    fontFamily: 'Pretendard',
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey[600],
+                    size: 20,
+                  ),
+                  suffixIcon: _isSearching
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.clear,
+                            color: Colors.grey[600],
+                            size: 20,
+                          ),
+                          onPressed: _clearSearch,
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Pretendard',
+                ),
+              ),
+            ),
+          ),
           const SizedBox(
             height: 48,
             child: Padding(
@@ -1199,117 +1283,163 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              "Past Conversations",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ...sessions.map((session) {
-            final isCurrentSession =
-                chatProvider.currentSession?.id == session.id;
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12.0,
-                vertical: 6.0,
-              ),
-              child: Dismissible(
-                key: ValueKey('session_${session.id}'),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.red[400],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.delete,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Past Conversations",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                confirmDismiss: (direction) async {
-                  // 삭제 확인 없이 바로 삭제
-                  await chatProvider.deleteSession(session.id);
-                  return true;
-                },
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color:
-                          isCurrentSession ? Colors.black : Colors.grey[300]!,
-                      width: isCurrentSession ? 1.0 : 0.5,
+                if (_isSearching)
+                  Text(
+                    '${filteredSessions.length}개 결과',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontFamily: 'Pretendard',
                     ),
                   ),
-                  elevation: 0.5,
-                  color: Colors.white,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      chatProvider.selectSession(session.id);
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        // ... 기존 코드 ...
+              ],
+            ),
+          ),
+          if (filteredSessions.isEmpty && _isSearching)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    size: 48,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '검색 결과가 없습니다',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      fontFamily: 'Pretendard',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '"$_searchQuery"와 관련된 대화를 찾을 수 없습니다',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                      fontFamily: 'Pretendard',
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...filteredSessions.map((session) {
+              final isCurrentSession =
+                  chatProvider.currentSession?.id == session.id;
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12.0,
+                  vertical: 6.0,
+                ),
+                child: Dismissible(
+                  key: ValueKey('session_${session.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.red[400],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                  confirmDismiss: (direction) async {
+                    // 삭제 확인 없이 바로 삭제
+                    await chatProvider.deleteSession(session.id);
+                    return true;
+                  },
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color:
+                            isCurrentSession ? Colors.black : Colors.grey[300]!,
+                        width: isCurrentSession ? 1.0 : 0.5,
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  session.displayTitle.isNotEmpty
-                                      ? session.displayTitle
-                                      : 'No Title',
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.black,
+                    ),
+                    elevation: 0.5,
+                    color: Colors.white,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        chatProvider.selectSession(session.id);
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          // ... 기존 코드 ...
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 16,
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    session.displayTitle.isNotEmpty
+                                        ? session.displayTitle
+                                        : 'No Title',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.black,
+                                    ),
                                   ),
-                                ),
-                                if (session.messages.isNotEmpty)
+                                  if (session.messages.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2.0),
+                                      child: Text(
+                                        session.messages.last.message,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.grey[700],
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 2.0),
+                                    padding: const EdgeInsets.only(top: 4.0),
                                     child: Text(
-                                      session.messages.last.message,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      _formatTimeAgo(session.updatedAt),
                                       style: TextStyle(
-                                        color: Colors.grey[700],
-                                        fontSize: 13,
+                                        color: Colors.grey[500],
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text(
-                                    _formatTimeAgo(session.updatedAt),
-                                    style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
         ],
       ),
     );
