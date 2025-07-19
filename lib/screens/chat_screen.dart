@@ -519,43 +519,45 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_isEditing) ...[
-              SizedBox(
-                    height: 40,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFE8F0FE),
-                        foregroundColor: Color(0xFF5A6CEA),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Pretendard',
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                        minimumSize: const Size(0, 40),
-                        elevation: 0,
+              Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      onPressed: () {
-                        if (mounted) {
-                          setState(() {
-                            _editingMessage = null;
-                            _editingMessageIndex = null;
-                            _messageController.clear();
-                          });
-                        }
-                      },
-                      //child: Text('수정 중...', style: TextStyle(color: Color(0xFF5A6CEA), fontSize: 16, fontWeight: FontWeight.w900, fontFamily: 'Pretendard'),),
-                      child: Row(
-                        children: const [
-                          Text('수정 중...', style: TextStyle(color: Color(0xFF5A6CEA), fontSize: 16, fontWeight: FontWeight.w900, fontFamily: 'Pretendard'),),
-                          Spacer(),
-                          Icon(Symbols.close, size: 18, color: Color(0xFF5A6CEA)),
-                        ],
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Pretendard',
                       ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      minimumSize: const Size(0, 40),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      if (mounted) {
+                        setState(() {
+                          _editingMessage = null;
+                          _editingMessageIndex = null;
+                          _messageController.clear();
+                        });
+                      }
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Symbols.edit, size: 24, fill: 1, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text('수정 중...', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, fontFamily: 'Pretendard'),),
+                        SizedBox(width: 10),
+                        Icon(Symbols.close, size: 18, color: Colors.white),
+                      ],
                     ),
                   ),
+                ),
             ],
             if (_selectedFiles.isNotEmpty)
               Padding(
@@ -776,6 +778,42 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                         label: Text(
                                           '  사진 추가',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Pretendard',
+                                          ),
+                                        ),
+                                        style: TextButton.styleFrom(
+                                          alignment: Alignment.centerLeft,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton.icon(
+                                        onPressed: () async {
+                                          // 카메라로 사진 촬영
+                                          final XFile? image = await _picker
+                                              .pickImage(source: ImageSource.camera);
+                                          if (image != null) {
+                                            if (mounted) {
+                                              setState(() {
+                                                _selectedImages.add(image);
+                                              });
+                                            }
+                                            Navigator.pop(context); // 사진 촬영 후 bottomsheet 닫기
+                                          }
+                                        },
+                                        icon: Icon(
+                                          Icons.camera_alt,
+                                          size: 28,
+                                          color: Colors.black,
+                                        ),
+                                        label: Text(
+                                          '  카메라',
                                           style: TextStyle(
                                             color: Colors.black,
                                             fontSize: 20,
