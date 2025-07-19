@@ -190,6 +190,7 @@ class ChatProvider with ChangeNotifier {
       sender: 'user',
       order: _currentSession!.messages.length,
       localImagePaths: images?.map((img) => img.path).toList(),
+      localFilePaths: files?.map((file) => file.path!).toList(),
     );
 
     // 현재 세션에 사용자 메시지 추가

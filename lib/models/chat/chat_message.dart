@@ -5,6 +5,7 @@ class ChatMessage {
   final String message;
   final int order;
   final List<String>? localImagePaths; // 로컬 이미지 경로 리스트
+  final List<String>? localFilePaths; // 로컬 파일 경로 리스트
   final List<Map<String, dynamic>>? images; // 서버 이미지 정보 리스트
   final List<Map<String, dynamic>>? files; // 서버 파일 정보 리스트
   final List<Map<String, dynamic>>? audios; // 서버 오디오 정보 리스트
@@ -16,6 +17,7 @@ class ChatMessage {
     required this.message,
     required this.order,
     this.localImagePaths,
+    this.localFilePaths,
     this.images,
     this.files,
     this.audios,
@@ -30,6 +32,9 @@ class ChatMessage {
       order: json['order'] ?? 0,
       localImagePaths: json['localImagePaths'] != null
           ? List<String>.from(json['localImagePaths'])
+          : null,
+      localFilePaths: json['localFilePaths'] != null
+          ? List<String>.from(json['localFilePaths'])
           : null,
       images: json['images'] != null
           ? List<Map<String, dynamic>>.from(json['images'])
@@ -51,6 +56,7 @@ class ChatMessage {
       'message': message,
       'order': order,
       if (localImagePaths != null) 'localImagePaths': localImagePaths,
+      if (localFilePaths != null) 'localFilePaths': localFilePaths,
       if (images != null) 'images': images,
       if (files != null) 'files': files,
       if (audios != null) 'audios': audios,
@@ -88,6 +94,7 @@ class ChatMessage {
     String? message,
     int? order,
     List<String>? localImagePaths,
+    List<String>? localFilePaths,
     List<Map<String, dynamic>>? images,
     List<Map<String, dynamic>>? files,
     List<Map<String, dynamic>>? audios,
@@ -99,6 +106,7 @@ class ChatMessage {
       message: message ?? this.message,
       order: order ?? this.order,
       localImagePaths: localImagePaths ?? this.localImagePaths,
+      localFilePaths: localFilePaths ?? this.localFilePaths,
       images: images ?? this.images,
       files: files ?? this.files,
       audios: audios ?? this.audios,

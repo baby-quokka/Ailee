@@ -526,7 +526,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: _selectedFiles.map((file) => Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: Chip(
-                        label: Text(file.name, style: const TextStyle(fontSize: 14)),
+                        backgroundColor: Colors.white,
+                        label: Text(file.name, style: const TextStyle(fontSize: 14, color: Colors.black, fontFamily: 'Pretendard')),
                         onDeleted: () {
                           if (mounted) {
                             setState(() {
@@ -1057,7 +1058,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       if ((msg.localImagePaths != null && msg.localImagePaths!.isNotEmpty) ||
-                          (msg.serverImageUrls.isNotEmpty))
+                          (msg.localFilePaths != null && msg.localFilePaths!.isNotEmpty) ||
+                          (msg.serverImageUrls.isNotEmpty) ||
+                          (msg.serverFileUrls.isNotEmpty))
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: SizedBox(
@@ -1131,6 +1134,87 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   );
                                 }),
+                                // 로컬 파일들
+                                ...(msg.localFilePaths ?? []).map((filePath) {
+                                  final fileName = filePath.split('/').last;
+                                  final fileExtension = fileName.split('.').last.toLowerCase();
+                                  
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 4),
+                                    child: Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[100],
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.grey[300]!),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            _getFileIcon(fileExtension),
+                                            size: 32,
+                                            color: Colors.grey[600],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            fileName.length > 8 ? '${fileName.substring(0, 8)}...' : fileName,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.grey[600],
+                                              fontFamily: 'Pretendard',
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }),
+                                // 서버 파일들
+                                ...msg.serverFileUrls.map((fileUrl) {
+                                  final fullFileUrl = '${ApiConfig.baseUrl.replaceAll('/api', '')}$fileUrl';
+                                  final fileName = fileUrl.split('/').last;
+                                  final fileExtension = fileName.split('.').last.toLowerCase();
+                                  
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 4),
+                                    child: Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[100],
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.grey[300]!),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            _getFileIcon(fileExtension),
+                                            size: 32,
+                                            color: Colors.grey[600],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            fileName.length > 8 ? '${fileName.substring(0, 8)}...' : fileName,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.grey[600],
+                                              fontFamily: 'Pretendard',
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }),
                               ],
                             ),
                           ),
@@ -1197,8 +1281,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 서버 이미지가 있는 경우 표시
-                          if (msg.serverImageUrls.isNotEmpty)
+                          // 서버 이미지나 파일이 있는 경우 표시
+                          if (msg.serverImageUrls.isNotEmpty || msg.serverFileUrls.isNotEmpty || 
+                              (msg.localFilePaths != null && msg.localFilePaths!.isNotEmpty))
                             Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: SizedBox(
@@ -1206,55 +1291,139 @@ class _ChatScreenState extends State<ChatScreen> {
                                 child: ListView(
                                   scrollDirection: Axis.horizontal,
                                   shrinkWrap: true,
-                                  children: msg.serverImageUrls.map((imageUrl) {
-                                    final fullImageUrl = '${ApiConfig.baseUrl.replaceAll('/api', '')}$imageUrl';
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image.network(
-                                          fullImageUrl,
+                                  children: [
+                                    // 서버 이미지들
+                                    ...msg.serverImageUrls.map((imageUrl) {
+                                      final fullImageUrl = '${ApiConfig.baseUrl.replaceAll('/api', '')}$imageUrl';
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 8),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(10),
+                                          child: Image.network(
+                                            fullImageUrl,
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return Container(
+                                                width: 80,
+                                                height: 80,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[200],
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Center(
+                                                  child: CircularProgressIndicator(
+                                                    value: loadingProgress.expectedTotalBytes != null
+                                                        ? loadingProgress.cumulativeBytesLoaded /
+                                                            loadingProgress.expectedTotalBytes!
+                                                        : null,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                width: 80,
+                                                height: 80,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[200],
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.error,
+                                                  color: Colors.grey,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    // 로컬 파일들
+                                    ...(msg.localFilePaths ?? []).map((filePath) {
+                                      final fileName = filePath.split('/').last;
+                                      final fileExtension = fileName.split('.').last.toLowerCase();
+                                      
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 8),
+                                        child: Container(
                                           width: 80,
                                           height: 80,
-                                          fit: BoxFit.cover,
-                                          loadingBuilder: (context, child, loadingProgress) {
-                                            if (loadingProgress == null) return child;
-                                            return Container(
-                                              width: 80,
-                                              height: 80,
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[200],
-                                                borderRadius: BorderRadius.circular(10),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: Colors.grey[300]!),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                _getFileIcon(fileExtension),
+                                                size: 32,
+                                                color: Colors.grey[600],
                                               ),
-                                              child: Center(
-                                                child: CircularProgressIndicator(
-                                                  value: loadingProgress.expectedTotalBytes != null
-                                                      ? loadingProgress.cumulativeBytesLoaded /
-                                                          loadingProgress.expectedTotalBytes!
-                                                      : null,
-                                                  strokeWidth: 2,
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                fileName.length > 8 ? '${fileName.substring(0, 8)}...' : fileName,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey[600],
+                                                  fontFamily: 'Pretendard',
                                                 ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                            );
-                                          },
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Container(
-                                              width: 80,
-                                              height: 80,
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[200],
-                                                borderRadius: BorderRadius.circular(10),
-                                              ),
-                                              child: const Icon(
-                                                Icons.error,
-                                                color: Colors.grey,
-                                              ),
-                                            );
-                                          },
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  }).toList(),
+                                      );
+                                    }),
+                                    // 서버 파일들
+                                    ...msg.serverFileUrls.map((fileUrl) {
+                                      final fullFileUrl = '${ApiConfig.baseUrl.replaceAll('/api', '')}$fileUrl';
+                                      final fileName = fileUrl.split('/').last;
+                                      final fileExtension = fileName.split('.').last.toLowerCase();
+                                      
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 8),
+                                        child: Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: Colors.grey[300]!),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                _getFileIcon(fileExtension),
+                                                size: 32,
+                                                color: Colors.grey[600],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                fileName.length > 8 ? '${fileName.substring(0, 8)}...' : fileName,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey[600],
+                                                  fontFamily: 'Pretendard',
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ],
                                 ),
                               ),
                             ),
@@ -1615,6 +1784,45 @@ class _ChatScreenState extends State<ChatScreen> {
     if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
     if (diff.inHours < 24) return '${diff.inHours}시간 전';
     return '${diff.inDays}일 전';
+  }
+
+  /// 파일 확장자에 따른 아이콘을 반환하는 메서드
+  IconData _getFileIcon(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'xls':
+      case 'xlsx':
+        return Icons.table_chart;
+      case 'ppt':
+      case 'pptx':
+        return Icons.slideshow;
+      case 'txt':
+        return Icons.text_snippet;
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return Icons.archive;
+      case 'mp3':
+      case 'wav':
+      case 'aac':
+        return Icons.audiotrack;
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+        return Icons.videocam;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'bmp':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
+    }
   }
 }
 
