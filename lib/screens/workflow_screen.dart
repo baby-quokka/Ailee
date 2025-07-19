@@ -3,16 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../providers/chat_provider.dart';
-import '../models/chat_bot.dart';
+import '../models/chat/chat_bot.dart';
 
 class WorkflowScreen extends StatelessWidget {
   final ChatBot bot;
   final TextEditingController workflowInputController;
   const WorkflowScreen({
-    Key? key,
+    super.key,
     required this.bot,
     required this.workflowInputController,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +181,7 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
           // 선택지 카드
           ...List.generate(response != null ? response.length - 1 : 0, (i) {
             final text = response != null ? response[i + 1] : '';
-            if (text == null || text.trim().isEmpty) return SizedBox.shrink();
+            if (text.trim().isEmpty) return SizedBox.shrink();
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: InkWell(
@@ -269,4 +269,4 @@ class _WorkflowScreenBodyState extends State<_WorkflowScreenBody> {
       ),
     );
   }
-} 
+}

@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/chat_message.dart';
-import '../models/chat_bot.dart';
-import '../models/chat_session.dart';
+import '../models/chat/chat_message.dart';
+import '../models/chat/chat_bot.dart';
+import '../models/chat/chat_session.dart';
 import '../services/chat_api_service.dart';
 
 /// 채팅 관련 상태를 관리하는 Provider 클래스
