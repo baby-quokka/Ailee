@@ -182,18 +182,12 @@ class ChatApiService {
       'is_search': isResearchActive,
       'images': images,
     };
-    print('=== editMessage 요청 ===');
-    print('요청 데이터:');
-    print(data);
     try {
-      final response = await _put(
+      await _put(
         ApiConfig.chatSession,
         data
       );
-      print('editMessage 응답:');
-      print(response);
     } catch (e) {
-      print('editMessage 에러: $e');
       rethrow;
     }
   }
@@ -213,13 +207,9 @@ class ChatApiService {
 
   // 유저의 모든 채팅 세션 조회
   Future<List<ChatSession>> getUserSessions(int userId) async {
-    print('getUserSessions 호출');
-    print('userId: $userId');
     final response = await _get<List<dynamic>>(
       '${ApiConfig.chatSessions}$userId/sessions/',
     );
-    print('getUserSessions 응답:');
-    print(response);
     return response.map((json) => ChatSession.fromJson(json)).toList();
   }
 
@@ -228,9 +218,6 @@ class ChatApiService {
     final response = await _get<List<dynamic>>(
       '${ApiConfig.chatSession}$sessionId/',
     );
-
-    print('getSessionMessages 응답:');
-    print(response);
     return response.map((json) => ChatMessage.fromJson(json)).toList();
   }
 
@@ -283,7 +270,6 @@ class ChatApiService {
     if (workflowId != null) {
       data['workflow_id'] = workflowId;
     }
-    print(data);
     final response = await _post<Map<String, dynamic>>(
       ApiConfig.chatSession,
       data,
@@ -309,17 +295,6 @@ class ChatApiService {
     List<XFile>? images,
     List<PlatformFile>? files,
   }) async {
-    // 디버깅: 함수 진입 및 파라미터 출력
-    print('[_sendMessageWithImages] 호출됨');
-    print('  userInput: $userInput');
-    print('  userId: $userId, characterId: $characterId');
-    print('  isWorkflow: $isWorkflow, isResearchActive: $isResearchActive');
-    if (images != null) print('  images: ${images.length}개');
-    if (files != null) print('  files: ${files.length}개');
-    if (sessionId != null) print('  sessionId: $sessionId');
-    if (workflowId != null) print('  workflowId: $workflowId');
-    
-    
     try {
       final request = http.MultipartRequest(
         'POST',
@@ -460,10 +435,6 @@ class ChatApiService {
           );
         }
       }
-      print('  request.files: ${request.files.length}개');
-      for (int i = 0; i < request.files.length; i++) {
-        print('    [${i}] ${request.files[i].field} - ${request.files[i].filename}');
-      }
       // 업로드할 파일이 없으면 에러
       if (request.files.isEmpty) {
         throw ApiException('처리할 수 있는 유효한 이미지 파일이 없습니다.', 0);
@@ -472,17 +443,13 @@ class ChatApiService {
       final streamedResponse = await request.send().timeout(ApiConfig.timeout);
       
       final response = await http.Response.fromStream(streamedResponse);
-      print('  서버 응답 status: ${response.statusCode}');
-      print('  서버 응답 body: ${response.body}');
       // 응답 파싱
       Map<String, dynamic> responseData;
       try {
         responseData = json.decode(response.body) as Map<String, dynamic>;
       } catch (e) {
-        print('  [파싱 에러] $e');
         throw ApiException('서버 응답을 파싱할 수 없습니다: $e', response.statusCode);
       }
-      print('  파싱된 응답: $responseData');
       return {
         'response': responseData['response'],
         'session_id': responseData['session_id'],
@@ -490,7 +457,6 @@ class ChatApiService {
         'is_fa': responseData['is_fa'] ?? false,
       };
     } catch (e) {
-      print('[_sendMessageWithImages] 에러: $e');
       if (e is ApiException) rethrow;
       throw ApiException('이미지 업로드 중 오류가 발생했습니다: $e', 0);
     }

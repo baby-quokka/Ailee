@@ -13,6 +13,7 @@ import 'dart:io';
 import 'workflow_screen.dart';
 import 'contents_screen.dart';
 import 'package:file_picker/file_picker.dart';
+import '../config/api_config.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -708,15 +709,13 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ),
                                       TextButton.icon(
                                         onPressed: () async {
-                                          // 사진첩에서 이미지 선택
-                                          final XFile? image = await _picker
-                                              .pickImage(
-                                                source: ImageSource.gallery,
-                                              );
-                                          if (image != null) {
+                                          // 사진첩에서 여러 이미지 선택
+                                          final List<XFile> images = await _picker
+                                              .pickMultiImage();
+                                          if (images.isNotEmpty) {
                                             if (mounted) {
                                               setState(() {
-                                                _selectedImages.add(image);
+                                                _selectedImages.addAll(images);
                                               });
                                             }
                                             Navigator.pop(context); // 사진 선택 후 bottomsheet 닫기
@@ -1057,7 +1056,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      if (msg.localImagePaths != null && msg.localImagePaths!.isNotEmpty)
+                      if ((msg.localImagePaths != null && msg.localImagePaths!.isNotEmpty) ||
+                          (msg.serverImageUrls.isNotEmpty))
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: SizedBox(
@@ -1065,20 +1065,73 @@ class _ChatScreenState extends State<ChatScreen> {
                             child: ListView(
                               scrollDirection: Axis.horizontal,
                               shrinkWrap: true,
-                              children: msg.localImagePaths!.map((path) =>
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 4),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.file(
-                                      File(path),
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
+                              children: [
+                                // 로컬 이미지들
+                                ...(msg.localImagePaths ?? []).map((path) =>
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 4),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.file(
+                                        File(path),
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ).toList(),
+                                // 서버 이미지들
+                                ...msg.serverImageUrls.map((imageUrl) {
+                                  final fullImageUrl = '${ApiConfig.baseUrl.replaceAll('/api', '')}$imageUrl';
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 4),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.network(
+                                        fullImageUrl,
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Container(
+                                            width: 80,
+                                            height: 80,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[200],
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                value: loadingProgress.expectedTotalBytes != null
+                                                    ? loadingProgress.cumulativeBytesLoaded /
+                                                        loadingProgress.expectedTotalBytes!
+                                                    : null,
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            width: 80,
+                                            height: 80,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[200],
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: const Icon(
+                                              Icons.error,
+                                              color: Colors.grey,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
                             ),
                           ),
                         ),
@@ -1139,16 +1192,83 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // AI 답변 텍스트
+                    // AI 답변 텍스트와 이미지
                     Expanded(
-                      child: _buildFormattedText(
-                        msg.message,
-                        const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
-                          height: 1.4,
-                          fontFamily: 'Pretendard',
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 서버 이미지가 있는 경우 표시
+                          if (msg.serverImageUrls.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: SizedBox(
+                                height: 80,
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  shrinkWrap: true,
+                                  children: msg.serverImageUrls.map((imageUrl) {
+                                    final fullImageUrl = '${ApiConfig.baseUrl.replaceAll('/api', '')}$imageUrl';
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.network(
+                                          fullImageUrl,
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return Container(
+                                              width: 80,
+                                              height: 80,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey[200],
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: Center(
+                                                child: CircularProgressIndicator(
+                                                  value: loadingProgress.expectedTotalBytes != null
+                                                      ? loadingProgress.cumulativeBytesLoaded /
+                                                          loadingProgress.expectedTotalBytes!
+                                                      : null,
+                                                  strokeWidth: 2,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              width: 80,
+                                              height: 80,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey[200],
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: const Icon(
+                                                Icons.error,
+                                                color: Colors.grey,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                          // 텍스트 메시지
+                          _buildFormattedText(
+                            msg.message,
+                            const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                              height: 1.4,
+                              fontFamily: 'Pretendard',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

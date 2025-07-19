@@ -120,6 +120,9 @@ class ChatProvider with ChangeNotifier {
                   message: msg.message,
                   sender: msg.sender,
                   order: msg.order,
+                  images: msg.images, // 서버 이미지 정보 저장
+                  files: msg.files, // 서버 파일 정보 저장
+                  audios: msg.audios, // 서버 오디오 정보 저장
                 ),
               )
               .toList();
