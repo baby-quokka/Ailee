@@ -12,6 +12,9 @@ class SlabProvider with ChangeNotifier {
   List<Post> _posts = [];
   List<Post> get posts => _posts;
 
+  List<Map<String, dynamic>> _allPosts = [];
+  List<Map<String, dynamic>> get allPosts => _allPosts;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -23,9 +26,90 @@ class SlabProvider with ChangeNotifier {
       _slabs = await _apiService.fetchSlabs();
     } catch (e) {
       _slabs = [];
+      print('슬랩 목록 로드 실패: $e');
     }
     _isLoading = false;
     notifyListeners();
+  }
+
+  // 전체 포스트 목록 불러오기
+  Future<void> loadAllPosts() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _allPosts = await _apiService.fetchAllPosts();
+    } catch (e) {
+      _allPosts = [];
+      print('전체 포스트 목록 로드 실패: $e');
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // 구독한 슬랩의 포스트만 필터링
+  List<Map<String, dynamic>> getSubscribedPosts(
+    List<String> subscribedSlabNames,
+  ) {
+    return _allPosts
+        .where((post) => subscribedSlabNames.contains(post['slab']))
+        .toList();
+  }
+
+  // 슬랩 생성
+  Future<Slab?> createSlab({
+    required String name,
+    String? description,
+    String? emoji,
+  }) async {
+    try {
+      final newSlab = await _apiService.createSlab(name, description, emoji);
+      _slabs.add(newSlab);
+      notifyListeners();
+      return newSlab;
+    } catch (e) {
+      print('슬랩 생성 실패: $e');
+      return null;
+    }
+  }
+
+  // 슬랩 수정
+  Future<bool> editSlab(
+    int slabId, {
+    String? name,
+    String? description,
+    String? emoji,
+  }) async {
+    try {
+      final updatedSlab = await _apiService.editSlab(
+        slabId,
+        name: name,
+        description: description,
+        emoji: emoji,
+      );
+      final idx = _slabs.indexWhere((s) => s.id == slabId);
+      if (idx != -1) {
+        _slabs[idx] = updatedSlab;
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('슬랩 수정 실패: $e');
+      return false;
+    }
+  }
+
+  // 슬랩 삭제
+  Future<bool> removeSlab(int slabId) async {
+    try {
+      await _apiService.removeSlab(slabId);
+      _slabs.removeWhere((s) => s.id == slabId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('슬랩 삭제 실패: $e');
+      return false;
+    }
   }
 
   // 특정 슬랩의 포스트 불러오기
@@ -79,6 +163,7 @@ class SlabProvider with ChangeNotifier {
           content: content,
           createdAt: _posts[idx].createdAt,
           views: _posts[idx].views,
+          likesCount: _posts[idx].likesCount,
         );
         notifyListeners();
       }
@@ -93,60 +178,6 @@ class SlabProvider with ChangeNotifier {
     try {
       await _apiService.deletePost(postId);
       _posts.removeWhere((p) => p.id == postId);
-      notifyListeners();
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // 슬랩 생성
-  Future<Slab?> createSlab({
-    required String name,
-    String? description,
-    String? emoji,
-  }) async {
-    try {
-      final newSlab = await _apiService.createSlab(name, description, emoji);
-      _slabs.add(newSlab);
-      notifyListeners();
-      return newSlab;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // 슬랩 수정
-  Future<bool> editSlab(
-    int slabId, {
-    String? name,
-    String? description,
-    String? emoji,
-  }) async {
-    try {
-      final updatedSlab = await _apiService.editSlab(
-        slabId,
-        name: name,
-        description: description,
-        emoji: emoji,
-      );
-      final idx = _slabs.indexWhere((s) => s.id == slabId);
-      if (idx != -1) {
-        _slabs[idx] = updatedSlab;
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // 슬랩 삭제
-  Future<bool> removeSlab(int slabId) async {
-    try {
-      await _apiService.removeSlab(slabId);
-      _slabs.removeWhere((s) => s.id == slabId);
       notifyListeners();
       return true;
     } catch (e) {

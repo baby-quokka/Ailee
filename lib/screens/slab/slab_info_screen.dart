@@ -24,8 +24,10 @@ class _SlabInfoScreenState extends State<SlabInfoScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final homeState = context.findAncestorStateOfType<HomeScreenState>();
       homeState?.setBottomNavOffset(1.0);
-      // 슬랩 데이터 불러오기
-      Provider.of<SlabProvider>(context, listen: false).loadSlabs();
+      // 슬랩 데이터와 포스트 데이터 불러오기
+      final slabProvider = Provider.of<SlabProvider>(context, listen: false);
+      slabProvider.loadSlabs();
+      slabProvider.loadAllPosts();
     });
   }
 
@@ -48,6 +50,9 @@ class _SlabInfoScreenState extends State<SlabInfoScreen> {
     return filtered.take(5).toList();
   }
 
+  // **************************************************************************************
+  // **************************************************************************************
+  // 백엔드에서 비공개 구현 없기 때문에 임시 대책
   List<Slab> get mySlabs {
     final slabs = Provider.of<SlabProvider>(context).slabs;
     // slabs에 isSubscribed, isSecret이 없으므로, 임시로 users에 현재 유저가 포함된 공개 슬랩만
@@ -64,6 +69,8 @@ class _SlabInfoScreenState extends State<SlabInfoScreen> {
         .where((s) => (s.description?.contains("비공개") ?? false))
         .toList();
   }
+  // **************************************************************************************
+  // **************************************************************************************
 
   @override
   Widget build(BuildContext context) {
@@ -269,13 +276,19 @@ class SlabCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        // 해당 슬랩의 포스트만 필터링
+        final slabPosts =
+            Provider.of<SlabProvider>(context, listen: false).allPosts
+                .where((post) => post['slab']['name'] == slab.name)
+                .toList();
+
         Navigator.push(
           context,
           PageRouteBuilder(
             pageBuilder:
                 (context, animation, secondaryAnimation) => SlabDetailScreen(
                   slabName: slab.name,
-                  allPosts: [],
+                  allPosts: slabPosts,
                   onBack: () {
                     Navigator.pop(context);
                   },

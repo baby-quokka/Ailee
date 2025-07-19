@@ -3,7 +3,6 @@ import 'package:ailee/providers/slab_provider.dart';
 import 'package:ailee/screens/slab/slab_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dummy_post.dart';
 
 class SlabSearchScreen extends StatefulWidget {
   const SlabSearchScreen({super.key});
@@ -63,13 +62,22 @@ class _SlabSearchScreenState extends State<SlabSearchScreen> {
                     final slab = filteredSlabs[idx];
                     return GestureDetector(
                       onTap: () {
+                        // 해당 슬랩의 포스트만 필터링
+                        final slabPosts =
+                            Provider.of<SlabProvider>(context, listen: false)
+                                .allPosts
+                                .where(
+                                  (post) => post['slab']['name'] == slab.name,
+                                )
+                                .toList();
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder:
                                 (context) => SlabDetailScreen(
                                   slabName: slab.name,
-                                  allPosts: dummyPosts,
+                                  allPosts: slabPosts,
                                   onBack: () {
                                     Navigator.pop(context);
                                     Navigator.pop(context);

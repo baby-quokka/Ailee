@@ -31,4 +31,15 @@ class Slab {
       createdAt: json['created_at'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'user': users.map((u) => u.toJson()).toList(),
+      'imoji': imoji,
+      'created_at': createdAt,
+    };
+  }
 }

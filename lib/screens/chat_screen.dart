@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../providers/chat_provider.dart';
 import '../models/chat/chat_message.dart';
-import '../models/slab/chat_bot.dart';
+import '../models/chat/chat_bot.dart';
 import '../providers/auth_provider.dart';
 import 'package:material_symbols_icons/symbols.dart';
 

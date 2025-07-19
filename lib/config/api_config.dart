@@ -1,6 +1,6 @@
 class ApiConfig {
   // 개발 환경
-  static const String baseUrl = 'http://10.64.144.81:8000/api';
+  static const String baseUrl = 'http://10.64.141.126:8000/api';
 
   // API 엔드포인트
   static const String userCreate = '/user/create/';

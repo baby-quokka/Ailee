@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/chat/chat_message.dart';
-import '../models/slab/chat_bot.dart';
+import '../models/chat/chat_bot.dart';
 import '../models/chat/chat_session.dart';
 import '../services/chat_api_service.dart';
 

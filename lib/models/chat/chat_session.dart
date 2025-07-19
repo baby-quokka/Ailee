@@ -1,5 +1,5 @@
 import 'chat_message.dart';
-import '../slab/chat_bot.dart';
+import 'chat_bot.dart';
 
 class ChatSession {
   final int id;

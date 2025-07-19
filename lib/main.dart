@@ -1,4 +1,5 @@
 import 'package:ailee/providers/slab_provider.dart';
+import 'package:ailee/providers/interaction_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/chat_provider.dart';
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider(create: (context) => SlabProvider()),
+        ChangeNotifierProvider(create: (context) => InteractionProvider()),
       ],
       child: MaterialApp(
         title: 'Ailee',

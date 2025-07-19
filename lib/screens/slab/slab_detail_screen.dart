@@ -84,8 +84,7 @@ class _SlabDetailScreenState extends State<SlabDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final posts =
-        widget.allPosts.where((p) => p['slab'] == widget.slabName).toList();
+    final posts = widget.allPosts;
     return WillPopScope(
       onWillPop: () async {
         _handleBack();
